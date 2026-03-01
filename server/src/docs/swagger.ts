@@ -4,6 +4,15 @@ import { env } from "../config/env";
 // Swagger (OpenAPI) configuration
 export const swaggerSpec = swaggerJSDoc({
   definition: {
+    components: {
+  securitySchemes: {
+    bearerAuth: {
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "JWT",
+    },
+  },
+},
     openapi: "3.0.0",
     info: {
       title: "ArenaX API",
