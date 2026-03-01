@@ -2,6 +2,9 @@ import express from "express";
 import cors from "cors";
 import { env } from "./config/env";
 import { errorMiddleware } from "./middlewares/error.middleware";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./docs/swagger";
+import { healthRouter } from "./routes/health.routes";
 
 // Create and configure the Express app
 export function createApp() {
@@ -10,12 +13,11 @@ export function createApp() {
   app.use(cors({ origin: env.corsOrigin, credentials: true }));
   app.use(express.json());
 
-  // Health check endpoint
-  app.get("/health", (_req, res) => {
-    res.json({ status: "ok" });
-  });
+  // Swagger API docs
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.use("/health", healthRouter);
     // Global error handler (should be last middleware)
   app.use(errorMiddleware);
-  
+
   return app;
 }
