@@ -2,12 +2,12 @@ import { useState } from "react";
 import { login } from "../services/authService";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
-      const res = await login({ email, password });
+      const res = await login({ username, password });
       console.log(res);
     } catch (err) {
       console.error(err);
@@ -19,9 +19,9 @@ export default function LoginPage() {
       <h1>Login</h1>
 
       <input
-        placeholder="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        placeholder="username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
       />
 
       <input
