@@ -1,26 +1,40 @@
 import jwt, { JwtPayload, Secret, SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
 
-type TokenPayload = { id: string };
+type AccessTokenPayload = {
+  id: string;
+};
+
+type RefreshTokenPayload = {
+  id: string;
+  jti: string;
+};
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name} in environment variables`);
+  if (!value) {
+    throw new Error(`Missing ${name} in environment variables`);
+  }
   return value;
 }
 
 const accessSecret: Secret = getRequiredEnv("JWT_ACCESS_SECRET");
 const refreshSecret: Secret = getRequiredEnv("JWT_REFRESH_SECRET");
 
-// Keep expiresIn strongly typed for jsonwebtoken
-const accessExpiresIn: SignOptions["expiresIn"] = getRequiredEnv("ACCESS_TOKEN_EXPIRES_IN") as SignOptions["expiresIn"];
-const refreshExpiresIn: SignOptions["expiresIn"] = getRequiredEnv("REFRESH_TOKEN_EXPIRES_IN") as SignOptions["expiresIn"];
+const accessExpiresIn = getRequiredEnv("ACCESS_TOKEN_EXPIRES_IN") as SignOptions["expiresIn"];
+const refreshExpiresIn = getRequiredEnv("REFRESH_TOKEN_EXPIRES_IN") as SignOptions["expiresIn"];
 
-export function generateAccessToken(payload: TokenPayload): string {
+export function generateAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, accessSecret, { expiresIn: accessExpiresIn });
 }
 
-export function generateRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, refreshSecret, { expiresIn: refreshExpiresIn });
+export function generateRefreshToken(payload: AccessTokenPayload): string {
+  const refreshPayload: RefreshTokenPayload = {
+    id: payload.id,
+    jti: crypto.randomUUID(),
+  };
+
+  return jwt.sign(refreshPayload, refreshSecret, { expiresIn: refreshExpiresIn });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {

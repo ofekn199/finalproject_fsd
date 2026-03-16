@@ -1,3 +1,8 @@
+import dotenv from "dotenv";
+
+// Load environment variables immediately
+dotenv.config();
+
 // Central place for environment variables
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",

@@ -5,6 +5,7 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
 import { healthRouter } from "./routes/health.routes";
+import { authRouter } from "./routes/auth.routes";
 
 // Create and configure the Express app
 export function createApp() {
@@ -16,6 +17,7 @@ export function createApp() {
   // Swagger API docs
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.use("/health", healthRouter);
+  app.use("/auth", authRouter);
     // Global error handler (should be last middleware)
   app.use(errorMiddleware);
 

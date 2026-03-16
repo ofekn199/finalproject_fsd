@@ -1,9 +1,7 @@
-import dotenv from "dotenv";
 import { createApp } from "./app";
 import { validateEnv, env } from "./config/env";
 import { connectMongo } from "./db/mongo";
 
-dotenv.config();
 validateEnv();
 
 const app = createApp();

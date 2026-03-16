@@ -77,4 +77,56 @@ describe("Auth API", () => {
     expect(res.status).toBe(401);
     expect(res.body.message).toBe("Invalid credentials");
   });
+
+  it("should refresh tokens", async () => {
+  await request(app).post("/auth/register").send({
+    username: "refresh_user",
+    email: "refresh_user@example.com",
+    password: "Pass1234!",
+  });
+
+  const loginRes = await request(app).post("/auth/login").send({
+    username: "refresh_user",
+    password: "Pass1234!",
+  });
+
+  const refreshRes = await request(app).post("/auth/refresh").send({
+    refreshToken: loginRes.body.refreshToken,
+  });
+
+  expect(refreshRes.status).toBe(200);
+  expect(refreshRes.body.accessToken).toBeDefined();
+  expect(refreshRes.body.refreshToken).toBeDefined();
+  expect(refreshRes.body.refreshToken).not.toBe(loginRes.body.refreshToken);
 });
+
+it("should logout user with valid access token", async () => {
+  await request(app).post("/auth/register").send({
+    username: "logout_user",
+    email: "logout_user@example.com",
+    password: "Pass1234!",
+  });
+
+  const loginRes = await request(app).post("/auth/login").send({
+    username: "logout_user",
+    password: "Pass1234!",
+  });
+
+  const logoutRes = await request(app)
+    .post("/auth/logout")
+    .set("Authorization", `Bearer ${loginRes.body.accessToken}`);
+
+  expect(logoutRes.status).toBe(200);
+  expect(logoutRes.body.message).toBe("Logged out");
+});
+
+it("should reject logout without token", async () => {
+  const res = await request(app).post("/auth/logout");
+
+  expect(res.status).toBe(401);
+  expect(res.body.message).toBe("Missing access token");
+});
+
+  
+});
+
