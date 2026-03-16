@@ -16,3 +16,17 @@ export const login = async (data: {
   const res = await api.post("/auth/login", data);
   return res.data;
 };
+
+export const logoutRequest = async (accessToken: string) => {
+  const res = await api.post(
+    "/auth/logout",
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  return res.data;
+};
