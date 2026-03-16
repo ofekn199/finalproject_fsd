@@ -10,7 +10,8 @@ import { getUserById, updateUserProfile, updateUserAvatar } from "../services/us
 // GET /users/:id — returns public profile (no auth required)
 export async function getProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const user = await getUserById(req.params.id);
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const user = await getUserById(id);
     res.json(user);
   } catch (err) {
     next(err);
