@@ -4,6 +4,16 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from ".
 
 // Register a new user
 export async function registerUser(username: string, email: string, password: string) {
+  const existingUsername = await User.findOne({ username });
+  if (existingUsername) {
+    throw { status: 409, message: "Username already exists" };
+  }
+
+  const existingEmail = await User.findOne({ email });
+  if (existingEmail) {
+    throw { status: 409, message: "Email already exists" };
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
