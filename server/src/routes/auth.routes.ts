@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { register, login, refresh, logout } from "../controllers/auth.controller";
+import { validate } from "../middlewares/validate.middleware";
+import { registerSchema, loginSchema, refreshSchema } from "../utils/auth.schemas";
 
 export const authRouter = Router();
 
@@ -30,7 +32,7 @@ export const authRouter = Router();
  *       201:
  *         description: User created
  */
-authRouter.post("/register", register);
+authRouter.post("/register", validate(registerSchema), register);
 
 /**
  * @openapi
@@ -56,7 +58,7 @@ authRouter.post("/register", register);
  *       200:
  *         description: Tokens returned
  */
-authRouter.post("/login", login);
+authRouter.post("/login", validate(loginSchema), login);
 
 /**
  * @openapi
@@ -79,7 +81,7 @@ authRouter.post("/login", login);
  *       200:
  *         description: New tokens returned
  */
-authRouter.post("/refresh", refresh);
+authRouter.post("/refresh", validate(refreshSchema), refresh);
 
 /**
  * @openapi
