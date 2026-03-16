@@ -20,6 +20,6 @@ export const healthRouter = Router();
  *                   type: string
  *                   example: ok
  */
-healthRouter.get("/health", (_req, res) => {
+healthRouter.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
