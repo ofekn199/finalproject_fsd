@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { registerUser, loginUser, refreshTokens, logoutUser } from "../services/auth.service";
 import { verifyAccessToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { loginWithGoogle } from "../services/google-auth.service";
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -46,6 +47,16 @@ export async function logout(req: AuthRequest, res: Response, next: NextFunction
 
     await logoutUser(req.user.id);
     res.json({ message: "Logged out" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function googleLogin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { credential } = req.body;
+    const result = await loginWithGoogle(credential);
+    res.json(result);
   } catch (err) {
     next(err);
   }

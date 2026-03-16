@@ -9,6 +9,7 @@ export const env = {
   port: process.env.PORT ? Number(process.env.PORT) : 3000,
   mongoUri: process.env.MONGO_URI || "",
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
 };
 
 // Fail fast if required env vars are missing
