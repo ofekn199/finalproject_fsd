@@ -1,17 +1,36 @@
 import { useState } from "react";
-import { login } from "../services/authService";
+import { login as loginRequest } from "../services/authService";
+import { useAuth } from "../context/useAuth";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
-      const res = await login({ username, password });
-      console.log(res);
-    } catch (err) {
-      console.error(err);
-    }
+      setErrorMessage("");
+
+      const res = await loginRequest({ username, password });
+
+      login({
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
+      });
+
+      navigate("/feed");
+    }  catch (err: unknown) {
+  if (axios.isAxiosError(err)) {
+    setErrorMessage(err.response?.data?.message || "Login failed");
+  } else {
+    setErrorMessage("Login failed");
+  }
+}
   };
 
   return (
@@ -32,6 +51,12 @@ export default function LoginPage() {
       />
 
       <button onClick={handleLogin}>Login</button>
+
+      {errorMessage && <p>{errorMessage}</p>}
+
+      <p>
+        Don&apos;t have an account? <Link to="/register">Register</Link>
+      </p>
     </div>
   );
 }

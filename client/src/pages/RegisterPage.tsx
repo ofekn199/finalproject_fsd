@@ -1,18 +1,29 @@
 import { useState } from "react";
 import { register } from "../services/authService";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
-      const res = await register({ username, email, password });
-      console.log(res);
-    } catch (err) {
-      console.error(err);
-    }
+      setErrorMessage("");
+
+      await register({ username, email, password });
+      navigate("/");
+    } catch (err: unknown) {
+  if (axios.isAxiosError(err)) {
+    setErrorMessage(err.response?.data?.message || "Register failed");
+  } else {
+    setErrorMessage("Register failed");
+  }
+}
   };
 
   return (
@@ -39,6 +50,12 @@ export default function RegisterPage() {
       />
 
       <button onClick={handleRegister}>Register</button>
+
+      {errorMessage && <p>{errorMessage}</p>}
+
+      <p>
+        Already have an account? <Link to="/">Login</Link>
+      </p>
     </div>
   );
 }
