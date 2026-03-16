@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { registerUser, loginUser, refreshTokens, logoutUser } from "../services/auth.service";
 import { verifyAccessToken } from "../utils/jwt";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -37,18 +38,13 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function logout(req: Request, res: Response, next: NextFunction) {
+export async function logout(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Missing access token" });
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const token = authHeader.split(" ")[1];
-    const payload = verifyAccessToken(token);
-    const userId = String(payload.id);
-
-    await logoutUser(userId);
+    await logoutUser(req.user.id);
     res.json({ message: "Logged out" });
   } catch (err) {
     next(err);

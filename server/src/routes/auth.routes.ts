@@ -2,6 +2,7 @@ import { Router } from "express";
 import { register, login, refresh, logout } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
 import { registerSchema, loginSchema, refreshSchema } from "../utils/auth.schemas";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 export const authRouter = Router();
 
@@ -95,4 +96,4 @@ authRouter.post("/refresh", validate(refreshSchema), refresh);
  *       200:
  *         description: Logged out
  */
-authRouter.post("/logout", logout);
+authRouter.post("/logout", authMiddleware, logout);
