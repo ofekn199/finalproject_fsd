@@ -7,7 +7,11 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     const { username, email, password } = req.body;
     const user = await registerUser(username, email, password);
 
-    res.status(201).json(user);
+    res.status(201).json({
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+    });
   } catch (err) {
     next(err);
   }
