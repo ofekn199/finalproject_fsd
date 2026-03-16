@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { register, login, refresh, logout } from "../controllers/auth.controller";
+import { register, login, refresh, logout, googleLogin } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { registerSchema, loginSchema, refreshSchema } from "../utils/auth.schemas";
+import { registerSchema, loginSchema, refreshSchema, googleLoginSchema } from "../utils/auth.schemas";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
 export const authRouter = Router();
@@ -97,3 +97,26 @@ authRouter.post("/refresh", validate(refreshSchema), refresh);
  *         description: Logged out
  */
 authRouter.post("/logout", authMiddleware, logout);
+
+/**
+ * @openapi
+ * /auth/google:
+ *   post:
+ *     summary: Login with Google
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [credential]
+ *             properties:
+ *               credential:
+ *                 type: string
+ *                 example: google_id_token
+ *     responses:
+ *       200:
+ *         description: Tokens returned
+ */
+authRouter.post("/google", validate(googleLoginSchema), googleLogin);
