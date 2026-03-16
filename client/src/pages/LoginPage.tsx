@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { login as loginRequest } from "../services/authService";
+import { googleLogin, login as loginRequest } from "../services/authService";
 import { useAuth } from "../context/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -24,13 +25,34 @@ export default function LoginPage() {
       });
 
       navigate("/feed");
-    }  catch (err: unknown) {
-  if (axios.isAxiosError(err)) {
-    setErrorMessage(err.response?.data?.message || "Login failed");
-  } else {
-    setErrorMessage("Login failed");
-  }
-}
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setErrorMessage(err.response?.data?.message || "Login failed");
+      } else {
+        setErrorMessage("Login failed");
+      }
+    }
+  };
+
+  const handleGoogleLogin = async (credential: string) => {
+    try {
+      setErrorMessage("");
+
+      const res = await googleLogin(credential);
+
+      login({
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
+      });
+
+      navigate("/feed");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setErrorMessage(err.response?.data?.message || "Google login failed");
+      } else {
+        setErrorMessage("Google login failed");
+      }
+    }
   };
 
   return (
@@ -51,6 +73,19 @@ export default function LoginPage() {
       />
 
       <button onClick={handleLogin}>Login</button>
+
+      <div style={{ marginTop: "16px" }}>
+        <GoogleLogin
+          onSuccess={(credentialResponse) => {
+            if (credentialResponse.credential) {
+              handleGoogleLogin(credentialResponse.credential);
+            }
+          }}
+          onError={() => {
+            setErrorMessage("Google login failed");
+          }}
+        />
+      </div>
 
       {errorMessage && <p>{errorMessage}</p>}
 
