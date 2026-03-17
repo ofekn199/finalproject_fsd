@@ -14,6 +14,7 @@
  */
 
 import request from "supertest";
+import path from "path";
 import { createApp } from "../src/app";
 import { Express } from "express";
 import { registerAndLogin, createPost, TestUser, TestPost } from "./helpers";
@@ -52,6 +53,19 @@ describe("POST /posts", () => {
     expect(res.body._id).toBeDefined();
   });
 
+  it("should create a post with an image", async () => {
+    const imagePath = path.resolve(__dirname, "fixtures", "test-image.png");
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .field("text", "Post with image")
+      .attach("image", imagePath);
+
+    expect(res.status).toBe(201);
+    expect(res.body.text).toBe("Post with image");
+    expect(res.body.imageUrl).toMatch(/^\/uploads\//);
+  });
+
   it("should reject post with missing text", async () => {
     const res = await request(app)
       .post("/posts")
@@ -60,6 +74,15 @@ describe("POST /posts", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation failed");
+  });
+
+  it("should reject post with empty text", async () => {
+    const res = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ text: "   " });
+
+    expect(res.status).toBe(400);
   });
 
   it("should reject unauthenticated request", async () => {
@@ -113,6 +136,26 @@ describe("GET /posts", () => {
       expect(post.author.username).toBeDefined();
     }
   });
+
+  it("should filter posts by userId", async () => {
+    const res = await request(app).get(`/posts?userId=${owner.userId}`);
+
+    expect(res.status).toBe(200);
+    // Every returned post should belong to the owner
+    for (const post of res.body.items) {
+      expect(post.author._id).toBe(owner.userId);
+    }
+  });
+
+  it("should return posts in newest-first order", async () => {
+    const res = await request(app).get("/posts?limit=50");
+
+    expect(res.status).toBe(200);
+    const dates = res.body.items.map((p: { createdAt: string }) => new Date(p.createdAt).getTime());
+    for (let i = 1; i < dates.length; i++) {
+      expect(dates[i]).toBeLessThanOrEqual(dates[i - 1]);
+    }
+  });
 });
 
 // ── GET /posts/:id ───────────────────────────────────────────────────────────
@@ -153,6 +196,36 @@ describe("PUT /posts/:id", () => {
     expect(res.body.text).toBe("Updated text");
   });
 
+  it("should allow the owner to update text via multipart without changing the image", async () => {
+    // Give the seed post an image first
+    const imagePath = path.resolve(__dirname, "fixtures", "test-image.png");
+    await request(app)
+      .put(`/posts/${seedPost._id}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .field("text", "Has image")
+      .attach("image", imagePath);
+
+    // Now update text only — image should be preserved
+    const res = await request(app)
+      .put(`/posts/${seedPost._id}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .field("text", "Text only update");
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toBe("Text only update");
+    expect(res.body.imageUrl).toMatch(/^\/uploads\//);
+  });
+
+  it("should reject update with empty text", async () => {
+    const res = await request(app)
+      .put(`/posts/${seedPost._id}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ text: "" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Validation failed");
+  });
+
   it("should return 403 when a non-owner tries to update", async () => {
     const res = await request(app)
       .put(`/posts/${seedPost._id}`)
@@ -178,6 +251,30 @@ describe("PUT /posts/:id", () => {
       .send({ text: "Ghost post" });
 
     expect(res.status).toBe(404);
+  });
+
+  it("should allow the owner to update the post image", async () => {
+    const imagePath = path.resolve(__dirname, "fixtures", "test-image.png");
+    const res = await request(app)
+      .put(`/posts/${seedPost._id}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .field("text", "Updated with image")
+      .attach("image", imagePath);
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toBe("Updated with image");
+    expect(res.body.imageUrl).toMatch(/^\/uploads\//);
+  });
+
+  it("should allow the owner to remove the post image", async () => {
+    const res = await request(app)
+      .put(`/posts/${seedPost._id}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .field("text", "No image anymore")
+      .field("removeImage", "true");
+
+    expect(res.status).toBe(200);
+    expect(res.body.imageUrl).toBeFalsy();
   });
 });
 

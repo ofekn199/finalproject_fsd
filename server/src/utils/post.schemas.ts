@@ -23,12 +23,14 @@ export const createPostSchema = z.object({
 });
 
 // PUT /posts/:id — same text rules + params.id must be a non-empty string
+// removeImage is an optional form field ("true") to remove the existing image
 export const updatePostSchema = z.object({
   body: z.object({
     text: z
       .string({ error: "text is required" })
       .min(1, "text cannot be empty")
       .max(500, "text cannot exceed 500 characters"),
+    removeImage: z.string().optional(),
   }),
   params: z.object({
     id: z.string().min(1),
@@ -42,10 +44,11 @@ export const postIdSchema = z.object({
   }),
 });
 
-// GET /posts — optional pagination query params, both default to strings (parsed in controller)
+// GET /posts — optional pagination + optional userId filter (all parsed as strings in controller)
 export const feedQuerySchema = z.object({
   query: z.object({
     page: z.string().optional(),
     limit: z.string().optional(),
+    userId: z.string().optional(),
   }),
 });

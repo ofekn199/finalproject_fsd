@@ -24,14 +24,15 @@ export async function createPost(req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
-// GET /posts — returns a paginated list of posts (newest first)
-// Query params: page (default 1), limit (default 10)
+// GET /posts — returns paginated posts, newest first
+// Optional query params: page (default 1), limit (default 10), userId (filter by author)
 export async function getFeed(req: Request, res: Response, next: NextFunction) {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+    const userId = req.query.userId as string | undefined;
 
-    const result = await postService.getFeed(page, limit);
+    const result = await postService.getFeed(page, limit, userId);
     res.json(result);
   } catch (err) {
     next(err);
@@ -57,14 +58,24 @@ export async function getPostById(req: Request, res: Response, next: NextFunctio
   }
 }
 
-// PUT /posts/:id — updates the post text, only the owner can do this
+// PUT /posts/:id — updates the post text and/or image, only the owner can do this
 // The service throws 403 if req.user is not the post author
 export async function updatePost(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { text } = req.body;
+    const { text, removeImage } = req.body;
 
-    const updated = await postService.updatePost(id, req.user!.id, text);
+    // Determine image change intent:
+    //   new file uploaded → replace
+    //   removeImage="true" → remove
+    //   neither           → leave unchanged (undefined)
+    const imageUrl = req.file
+      ? `/uploads/${req.file.filename}`
+      : removeImage === "true"
+        ? null
+        : undefined;
+
+    const updated = await postService.updatePost(id, req.user!.id, text, imageUrl);
     res.json(updated);
   } catch (err) {
     next(err);
@@ -84,12 +95,18 @@ export async function deletePost(req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
-// GET /users/:id/posts — returns all posts by a specific user (used on the profile page)
+// GET /users/:id/posts — returns all posts by a specific user (profile page)
+// Reuses getFeed with a userId filter — validates the ID format first
 export async function getPostsByUser(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const posts = await postService.getPostsByUser(id);
-    res.json(posts);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const result = await postService.getFeed(1, 1000, id);
+    res.json(result.items);
   } catch (err) {
     next(err);
   }

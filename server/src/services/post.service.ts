@@ -10,7 +10,6 @@
 
 import fs from "fs";
 import path from "path";
-import mongoose from "mongoose";
 import { Post, IPost } from "../models/post.model";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -60,19 +59,21 @@ export async function createPost(
 }
 
 /**
- * Returns a paginated feed of all posts, newest first.
+ * Returns a paginated feed of posts, newest first.
+ * Pass authorId to filter by a specific user (used on profile pages).
  * The author field is populated with username and profilePicture.
  */
-export async function getFeed(page: number, limit: number): Promise<FeedResult> {
+export async function getFeed(page: number, limit: number, authorId?: string): Promise<FeedResult> {
+  const filter = authorId ? { author: authorId } : {};
   const skip = (page - 1) * limit;
 
   const [items, total] = await Promise.all([
-    Post.find()
+    Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("author", "username profilePicture"),
-    Post.countDocuments(),
+    Post.countDocuments(filter),
   ]);
 
   return {
@@ -92,14 +93,20 @@ export async function getPostById(id: string): Promise<IPost | null> {
 }
 
 /**
- * Updates the text of a post.
+ * Updates the text and optionally the image of a post.
  * Throws 403 if the requesting user is not the post author.
  * Throws 404 if the post doesn't exist.
+ *
+ * imageUrl:
+ *   string  → replace with new image (old file deleted from disk)
+ *   null    → remove existing image (old file deleted from disk)
+ *   undefined → leave image unchanged
  */
 export async function updatePost(
   postId: string,
   requesterId: string,
-  text: string
+  text: string,
+  imageUrl?: string | null
 ): Promise<IPost> {
   const post = await Post.findById(postId);
   if (!post) throw { status: 404, message: "Post not found" };
@@ -107,6 +114,11 @@ export async function updatePost(
     throw { status: 403, message: "Not authorized to edit this post" };
   }
   post.text = text;
+  if (imageUrl !== undefined) {
+    // Delete old image file before replacing or removing
+    if (post.imageUrl) deleteImageFile(post.imageUrl);
+    post.imageUrl = imageUrl ?? undefined;
+  }
   await post.save();
   return post.populate("author", "username profilePicture");
 }
@@ -132,15 +144,3 @@ export async function deletePost(
   await post.deleteOne();
 }
 
-/**
- * Returns all posts by a specific user (for the profile page).
- * Sorted newest first, no pagination (profile pages show all user posts).
- */
-export async function getPostsByUser(userId: string): Promise<IPost[]> {
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw { status: 400, message: "Invalid user ID" };
-  }
-  return Post.find({ author: userId })
-    .sort({ createdAt: -1 })
-    .populate("author", "username profilePicture");
-}

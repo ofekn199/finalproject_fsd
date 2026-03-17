@@ -62,6 +62,12 @@ describe("GET /users/:id", () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("User not found");
   });
+
+  it("should return 400 for an invalid ObjectId format", async () => {
+    const res = await request(app).get("/users/not-a-valid-id");
+
+    expect(res.status).toBe(400);
+  });
 });
 
 // ── PUT /users/me ────────────────────────────────────────────────────────────
@@ -93,6 +99,52 @@ describe("PUT /users/me", () => {
 
     const res = await request(app).get(`/users/${owner.userId}`);
     expect(res.body.bio).toBe("Updated bio");
+  });
+
+  it("should update the username of the logged-in user", async () => {
+    const newUsername = `updated_${Date.now()}`;
+    const res = await request(app)
+      .put("/users/me")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ username: newUsername });
+
+    expect(res.status).toBe(200);
+    expect(res.body.username).toBe(newUsername);
+    // Keep owner.username in sync for subsequent tests
+    owner.username = newUsername;
+  });
+
+  it("should return 409 when the new username is already taken", async () => {
+    const res = await request(app)
+      .put("/users/me")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ username: otherUser.username });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("Username already taken");
+  });
+
+  it("should reject a bio that is too long (> 300 chars)", async () => {
+    const res = await request(app)
+      .put("/users/me")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ bio: "b".repeat(301) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Validation failed");
+  });
+
+  it("should update both bio and username in one request", async () => {
+    const newUsername = `combo_${Date.now()}`;
+    const res = await request(app)
+      .put("/users/me")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ bio: "Combo update", username: newUsername });
+
+    expect(res.status).toBe(200);
+    expect(res.body.bio).toBe("Combo update");
+    expect(res.body.username).toBe(newUsername);
+    owner.username = newUsername;
   });
 });
 

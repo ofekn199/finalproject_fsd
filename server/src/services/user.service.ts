@@ -17,12 +17,20 @@ export async function getUserById(userId: string) {
   return user;
 }
 
-// Updates only the bio field of the logged-in user
+// Updates the logged-in user's bio and/or username
 // { new: true } returns the updated document instead of the old one
-export async function updateUserProfile(userId: string, bio: string) {
+export async function updateUserProfile(userId: string, fields: { bio?: string; username?: string }) {
+  // If changing username, check it isn't already taken by another user
+  if (fields.username) {
+    const existing = await User.findOne({ username: fields.username });
+    if (existing && existing._id.toString() !== userId) {
+      throw { status: 409, message: "Username already taken" };
+    }
+  }
+
   const user = await User.findByIdAndUpdate(
     userId,
-    { bio },
+    fields,
     { new: true, runValidators: true }
   ).select("-password -refreshToken -googleId");
 
