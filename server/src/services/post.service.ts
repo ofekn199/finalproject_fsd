@@ -56,7 +56,7 @@ export async function createPost(
   imageUrl?: string
 ): Promise<IPost> {
   const post = await Post.create({ author: authorId, text, imageUrl });
-  return post;
+  return post.populate("author", "username profilePicture");
 }
 
 /**
@@ -108,7 +108,7 @@ export async function updatePost(
   }
   post.text = text;
   await post.save();
-  return post;
+  return post.populate("author", "username profilePicture");
 }
 
 /**
