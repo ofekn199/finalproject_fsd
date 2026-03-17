@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/useAuth";
 import { logoutRequest } from "../services/authService";
-import { getPosts, type Post } from "../services/postService";
+import { getAllPosts, type Post } from "../services/postService";
 import PostCard from "../components/PostCard";
 import CreatePostForm from "../components/CreatePostForm";
 
@@ -41,7 +41,7 @@ export default function FeedPage() {
   useEffect(() => {
     setLoading(true);
     setFeedError("");
-    getPosts(1)
+    getAllPosts({ page: 1 })
       .then((result) => {
         setPosts(result.items);
         setPage(1);
@@ -64,7 +64,7 @@ export default function FeedPage() {
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const result = await getPosts(nextPage);
+      const result = await getAllPosts({ page: nextPage });
       setPosts((prev) => [...prev, ...result.items]);
       setPage(nextPage);
       setHasMore(result.hasMore);

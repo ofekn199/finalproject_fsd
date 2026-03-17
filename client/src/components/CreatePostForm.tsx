@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import axios from "axios";
 import { createPost, type Post } from "../services/postService";
+import { useToast } from "../context/ToastContext";
 
 /*
  * CreatePostForm — form for writing and submitting a new post.
@@ -22,6 +23,7 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +52,7 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
       setImage(null);
       setPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      showToast("Post created!", "success");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || "Failed to create post");

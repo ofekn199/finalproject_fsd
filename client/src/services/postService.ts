@@ -2,7 +2,7 @@ import { api } from "../api/axios";
 
 /*
  * Post service — API calls for post CRUD and feed.
- * getPosts    — public, no token needed
+ * getAllPosts — public, supports optional userId filter for profile pages
  * createPost  — auth required, supports optional image upload
  * updatePost  — auth required, owner only
  * deletePost  — auth required, owner only
@@ -29,9 +29,13 @@ export interface FeedResult {
   hasMore: boolean;
 }
 
-// GET /posts?page=&limit= — returns paginated feed, newest first
-export const getPosts = async (page = 1, limit = 10): Promise<FeedResult> => {
-  const res = await api.get(`/posts?page=${page}&limit=${limit}`);
+// GET /posts — returns paginated posts, newest first
+// Pass userId to filter by a specific author (used on profile pages)
+export const getAllPosts = async (params?: { page?: number; limit?: number; userId?: string }): Promise<FeedResult> => {
+  const { page = 1, limit = 10, userId } = params ?? {};
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (userId) query.set("userId", userId);
+  const res = await api.get(`/posts?${query}`);
   return res.data;
 };
 
@@ -54,17 +58,27 @@ export const createPost = async (
   return res.data;
 };
 
-// PUT /posts/:id — updates the post text, only the owner can call this
+// PUT /posts/:id — updates the post text and/or image, only the owner can call this
+// image: File = replace image, null = remove image, undefined = keep existing
 export const updatePost = async (
   id: string,
   text: string,
-  accessToken: string
+  accessToken: string,
+  image?: File | null
 ): Promise<Post> => {
-  const res = await api.put(
-    `/posts/${id}`,
-    { text },
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const form = new FormData();
+  form.append("text", text);
+  if (image === null) {
+    form.append("removeImage", "true");
+  } else if (image instanceof File) {
+    form.append("image", image);
+  }
+  const res = await api.put(`/posts/${id}`, form, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return res.data;
 };
 

@@ -20,10 +20,13 @@ export const getProfile = async (userId: string): Promise<UserProfile> => {
   return res.data;
 };
 
-export const updateBio = async (bio: string, accessToken: string): Promise<UserProfile> => {
+export const updateProfile = async (
+  fields: { bio?: string; username?: string },
+  accessToken: string
+): Promise<UserProfile> => {
   const res = await api.put(
     "/users/me",
-    { bio },
+    fields,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   return res.data;

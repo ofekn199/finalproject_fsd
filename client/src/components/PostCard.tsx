@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { type Post, updatePost, deletePost } from "../services/postService";
+import { useToast } from "../context/ToastContext";
 
 /*
  * PostCard — displays a single post in the feed.
@@ -10,11 +11,13 @@ import { type Post, updatePost, deletePost } from "../services/postService";
  * - Shows likes and comments counters
  * - If the logged-in user is the post owner: Edit and Delete buttons appear
  *
- * Edit mode: clicking Edit replaces the text with an inline textarea.
- *   Save → calls updatePost → parent updates its list via onUpdate()
+ * Edit mode: textarea + image controls appear inline.
+ *   Save → calls updatePost → toast "Post updated!" → parent updates list
  *   Cancel → discards changes, returns to display mode
  *
- * Delete: calls deletePost → parent removes the card via onDelete()
+ * Delete: clicking Delete shows an inline confirmation.
+ *   Confirm → calls deletePost → parent removes the card
+ *   Cancel → returns to normal view
  */
 
 interface PostCardProps {
@@ -34,9 +37,14 @@ export default function PostCard({
 }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
+  // undefined = no change, null = remove, File = replace
+  const [editImage, setEditImage] = useState<File | null | undefined>(undefined);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   // The current user owns this post if their ID matches the author's ID
   const isOwner = currentUserId === post.author._id;
@@ -61,9 +69,11 @@ export default function PostCard({
     setSaving(true);
     setError("");
     try {
-      const updated = await updatePost(post._id, editText.trim(), accessToken);
+      const updated = await updatePost(post._id, editText.trim(), accessToken, editImage);
       onUpdate(updated);
       setIsEditing(false);
+      if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+      showToast("Post updated!", "success");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || "Failed to update post");
@@ -89,16 +99,37 @@ export default function PostCard({
         setError("Failed to delete post");
       }
       setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
   const handleCancelEdit = () => {
-    setEditText(post.text); // discard changes
+    setEditText(post.text);
+    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    setEditImage(undefined);
+    setImagePreview("");
     setIsEditing(false);
     setError("");
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    setEditImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    setEditImage(null);
+    setImagePreview("");
+  };
+
   // ── Render ────────────────────────────────────────────────────────────
+
+  // Resolve the image src to show in edit mode
+  const editImageSrc = imagePreview || (editImage === null ? "" : post.imageUrl ? `${import.meta.env.VITE_API_URL}${post.imageUrl}` : "");
 
   return (
     <div className="card" style={cardStyle}>
@@ -126,7 +157,7 @@ export default function PostCard({
         </div>
 
         {/* Owner actions — only visible to the post author */}
-        {isOwner && !isEditing && (
+        {isOwner && !isEditing && !confirmDelete && (
           <div style={actionsStyle}>
             <button
               className="btn btn-ghost"
@@ -138,14 +169,38 @@ export default function PostCard({
             <button
               className="btn btn-danger"
               style={{ padding: "4px 12px", fontSize: 12 }}
-              onClick={handleDelete}
-              disabled={deleting}
+              onClick={() => { setConfirmDelete(true); setError(""); }}
             >
-              {deleting ? "Deleting…" : "Delete"}
+              Delete
             </button>
           </div>
         )}
       </div>
+
+      {/* Inline delete confirmation */}
+      {confirmDelete && (
+        <div style={confirmBoxStyle}>
+          <span style={{ fontSize: 13 }}>Delete this post?</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="btn btn-danger"
+              style={{ padding: "4px 14px", fontSize: 12 }}
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting…" : "Yes, delete"}
+            </button>
+            <button
+              className="btn btn-ghost"
+              style={{ padding: "4px 14px", fontSize: 12 }}
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error message */}
       {error && (
@@ -162,6 +217,35 @@ export default function PostCard({
             onChange={(e) => setEditText(e.target.value)}
             maxLength={500}
           />
+
+          {/* Image preview in edit mode */}
+          {editImageSrc && (
+            <img src={editImageSrc} alt="Post image" style={{ ...postImageStyle, marginTop: 8 }} />
+          )}
+
+          {/* Image controls: Remove (if image exists) + Add/Replace */}
+          <div style={imageControlsStyle}>
+            {editImageSrc && (
+              <button
+                className="btn btn-danger"
+                style={{ padding: "5px 14px", fontSize: 12 }}
+                onClick={handleRemoveImage}
+                type="button"
+              >
+                Remove image
+              </button>
+            )}
+            <label style={imageInputLabelStyle}>
+              {editImageSrc ? "Replace image" : "Add image"}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleImageChange}
+              />
+            </label>
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button
               className="btn btn-primary"
@@ -185,8 +269,8 @@ export default function PostCard({
         <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 12 }}>{post.text}</p>
       )}
 
-      {/* Post image (optional) */}
-      {post.imageUrl && (
+      {/* Post image (display mode only) */}
+      {!isEditing && post.imageUrl && (
         <img
           src={`${import.meta.env.VITE_API_URL}${post.imageUrl}`}
           alt="Post image"
@@ -254,6 +338,18 @@ const actionsStyle: React.CSSProperties = {
   gap: 6,
 };
 
+const confirmBoxStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "10px 14px",
+  borderRadius: 10,
+  background: "rgba(239,68,68,0.08)",
+  border: "1px solid rgba(239,68,68,0.25)",
+  marginBottom: 12,
+};
+
 const postImageStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: 12,
@@ -262,12 +358,28 @@ const postImageStyle: React.CSSProperties = {
   maxHeight: 400,
 };
 
+const imageControlsStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 8,
+};
+
+const imageInputLabelStyle: React.CSSProperties = {
+  display: "inline-block",
+  padding: "5px 14px",
+  fontSize: 12,
+  borderRadius: 8,
+  border: "1px dashed rgba(139,92,246,0.5)",
+  color: "var(--purple)",
+  cursor: "pointer",
+};
+
 const footerStyle: React.CSSProperties = {
   display: "flex",
   gap: 16,
   paddingTop: 10,
-  borderTop: "1px solid rgba(255,255,255,0.07)",
-};
+  borderTop: "1px solid rgba(255,255,255,0.07)",};
 
 const countStyle: React.CSSProperties = {
   display: "flex",
