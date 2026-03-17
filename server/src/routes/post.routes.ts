@@ -53,6 +53,10 @@ postRouter.post("/", authMiddleware, upload.single("image"), validate(createPost
  *       - in: query
  *         name: limit
  *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: userId
+ *         schema: { type: string }
+ *         description: Filter posts by author ID
  *     responses:
  *       200:
  *         description: Returns { items, page, limit, hasMore }
@@ -98,7 +102,7 @@ postRouter.get("/:id", validate(postIdSchema), getPostById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required: [text]
@@ -106,6 +110,12 @@ postRouter.get("/:id", validate(postIdSchema), getPostById);
  *               text:
  *                 type: string
  *                 maxLength: 500
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               removeImage:
+ *                 type: string
+ *                 enum: ["true"]
  *     responses:
  *       200:
  *         description: Updated post
@@ -116,8 +126,8 @@ postRouter.get("/:id", validate(postIdSchema), getPostById);
  *       404:
  *         description: Post not found
  */
-// auth required — service enforces that only the author can edit
-postRouter.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
+// auth required — multer handles the optional image, service enforces that only the author can edit
+postRouter.put("/:id", authMiddleware, upload.single("image"), validate(updatePostSchema), updatePost);
 
 /**
  * @openapi

@@ -187,5 +187,49 @@ it("should reject reuse of an already-rotated refresh token", async () => {
   expect(reuseRes.status).toBe(401);
 });
 
+it("should reject register when password is missing", async () => {
+  const res = await request(app).post("/auth/register").send({
+    username: "no_pass_user",
+    email: "no_pass@example.com",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject register when email is missing", async () => {
+  const res = await request(app).post("/auth/register").send({
+    username: "no_email_user",
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject login when username is missing", async () => {
+  const res = await request(app).post("/auth/login").send({
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject login when password is missing", async () => {
+  const res = await request(app).post("/auth/login").send({
+    username: "some_user",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject refresh when refreshToken is missing", async () => {
+  const res = await request(app).post("/auth/refresh").send({});
+
+  expect(res.status).toBe(400);
+});
+
 });
 

@@ -17,13 +17,13 @@ export async function getProfile(req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
-// PUT /users/me — updates the logged-in user's bio (auth required)
+// PUT /users/me — updates the logged-in user's bio and/or username (auth required)
 export async function updateProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    const { bio } = req.body;
-    const user = await updateUserProfile(req.user.id, bio ?? "");
+    const { bio, username } = req.body;
+    const user = await updateUserProfile(req.user.id, { bio, username });
     res.json(user);
   } catch (err) {
     next(err);
