@@ -1,41 +1,114 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { useAuth } from "../context/useAuth";
 import { logoutRequest } from "../services/authService";
-import axios from "axios";
-import { useState } from "react";
+import { getPosts, type Post } from "../services/postService";
+import PostCard from "../components/PostCard";
+import CreatePostForm from "../components/CreatePostForm";
+
+/*
+ * FeedPage — main page of the app after login.
+ *
+ * Layout:
+ *   - Sticky topbar with logo, My Profile, Sign out
+ *   - CreatePostForm (only shown to logged-in users)
+ *   - List of PostCards loaded from GET /posts
+ *   - "Load more" button when there are more pages
+ *
+ * State:
+ *   posts      — current list of posts (prepend on create, filter on delete)
+ *   page       — current pagination page (starts at 1)
+ *   hasMore    — whether there are more posts to load
+ *   loading    — initial load spinner
+ *   loadingMore — spinner for the "Load more" button
+ */
 
 export default function FeedPage() {
   const { logout, tokens, userId } = useAuth();
   const navigate = useNavigate();
-  const [errorMessage, setErrorMessage] = useState("");
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [feedError, setFeedError] = useState("");
+  const [logoutError, setLogoutError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Load the first page of posts on mount
+  useEffect(() => {
+    setLoading(true);
+    setFeedError("");
+    getPosts(1)
+      .then((result) => {
+        setPosts(result.items);
+        setPage(1);
+        setHasMore(result.hasMore);
+      })
+      .catch((err) => {
+        if (axios.isAxiosError(err)) {
+          setFeedError(err.response?.data?.message || "Failed to load posts");
+        } else {
+          setFeedError("Failed to load posts");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ── Handlers ─────────────────────────────────────────────────────────
+
+  // Append the next page of posts to the existing list
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const result = await getPosts(nextPage);
+      setPosts((prev) => [...prev, ...result.items]);
+      setPage(nextPage);
+      setHasMore(result.hasMore);
+    } catch {
+      // silently fail — user can retry by clicking Load more again
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Prepend the newly created post to the top of the feed
+  const handlePostCreated = (post: Post) => {
+    setPosts((prev) => [post, ...prev]);
+  };
+
+  // Remove a deleted post from the list
+  const handlePostDeleted = (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p._id !== postId));
+  };
+
+  // Replace an updated post in the list
+  const handlePostUpdated = (updated: Post) => {
+    setPosts((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    setErrorMessage("");
+    setLogoutError("");
     try {
-      if (tokens?.accessToken) {
-        await logoutRequest(tokens.accessToken);
-      }
-      logout();
-      navigate("/");
-    } catch (err: unknown) {
-      logout();
-      navigate("/");
-      if (axios.isAxiosError(err)) {
-        setErrorMessage(err.response?.data?.message || "Logout failed");
-      } else {
-        setErrorMessage("Logout failed");
-      }
+      if (tokens?.accessToken) await logoutRequest(tokens.accessToken);
+    } catch {
+      // proceed with local logout even if the server call fails
     } finally {
-      setLoggingOut(false);
+      logout();
+      navigate("/");
     }
   };
+
+  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <div style={pageStyle}>
 
-      {/* Topbar */}
+      {/* ── Topbar ── */}
       <header style={topbarStyle}>
         <div style={topbarInnerStyle}>
           <div style={brandStyle}>
@@ -72,41 +145,73 @@ export default function FeedPage() {
         </div>
       </header>
 
-      {/* Content */}
+      {/* ── Main content ── */}
       <main style={mainStyle}>
-        {errorMessage && (
-          <div className="alert-error" style={{ marginBottom: 20 }}>{errorMessage}</div>
+
+        {logoutError && (
+          <div className="alert-error" style={{ marginBottom: 16 }}>{logoutError}</div>
         )}
 
-        {/* Hero */}
-        <div className="card" style={heroCardStyle}>
-          <div style={heroGlowStyle} />
-          <div style={{ position: "relative" }}>
-            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 10 }}>
-              Welcome to{" "}
-              <span style={{ background: "linear-gradient(90deg, var(--purple), var(--cyan))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                ArenaX
-              </span>
-            </h2>
-            <p style={{ color: "var(--muted)", fontSize: 15, lineHeight: 1.7, maxWidth: 480 }}>
-              Your feed is coming soon. Posts, updates, and activity from your network will appear here.
+        {/* Create post form — only for logged-in users */}
+        {tokens?.accessToken && (
+          <CreatePostForm
+            accessToken={tokens.accessToken}
+            onCreated={handlePostCreated}
+          />
+        )}
+
+        {/* Feed */}
+        {loading ? (
+          <div style={centerStyle}>
+            <div className="spinner" />
+          </div>
+        ) : feedError ? (
+          <div className="alert-error">{feedError}</div>
+        ) : posts.length === 0 ? (
+          <div style={emptyStyle}>
+            <div style={emptyIconStyle}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 12 }}>
+              No posts yet. Be the first to post!
             </p>
           </div>
-        </div>
+        ) : (
+          <>
+            {posts.map((post) => (
+              <PostCard
+                key={post._id}
+                post={post}
+                accessToken={tokens?.accessToken ?? null}
+                currentUserId={userId}
+                onDelete={handlePostDeleted}
+                onUpdate={handlePostUpdated}
+              />
+            ))}
 
-        {/* Empty state */}
-        <div style={emptyStateStyle}>
-          <div style={emptyIconStyle}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 12 }}>No posts yet. Check back soon.</p>
-        </div>
+            {/* Load more */}
+            {hasMore && (
+              <div style={centerStyle}>
+                <button
+                  className="btn"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  style={{ minWidth: 140 }}
+                >
+                  {loadingMore ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "Load more"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
 }
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const pageStyle: React.CSSProperties = {
   minHeight: "100vh",
@@ -154,31 +259,22 @@ const logoStyle: React.CSSProperties = {
 
 const mainStyle: React.CSSProperties = {
   flex: 1,
-  maxWidth: 720,
+  maxWidth: 680,
   width: "100%",
   margin: "0 auto",
   padding: "32px 18px 64px",
 };
 
-const heroCardStyle: React.CSSProperties = {
-  padding: 32,
-  marginBottom: 20,
-  position: "relative",
-  overflow: "hidden",
+const centerStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  padding: "32px 0",
 };
 
-const heroGlowStyle: React.CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  background: "radial-gradient(600px 200px at 10% 50%, rgba(139,92,246,0.25), transparent 55%), radial-gradient(500px 200px at 80% 0%, rgba(34,211,238,0.15), transparent 55%)",
-  pointerEvents: "none",
-};
-
-const emptyStateStyle: React.CSSProperties = {
+const emptyStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
   padding: "48px 0",
 };
 

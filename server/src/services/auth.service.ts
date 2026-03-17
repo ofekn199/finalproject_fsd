@@ -69,7 +69,14 @@ export async function loginUser(username: string, password: string) {
 // Refresh tokens — verifies the old refresh token, issues a new pair (rotation)
 // Token rotation means a stolen refresh token can only be used once
 export async function refreshTokens(refreshToken: string) {
-  const payload = verifyRefreshToken(refreshToken);
+  // verifyRefreshToken throws a raw JWT error on invalid tokens — we catch it
+  // and convert to a clean { status: 401 } so errorMiddleware returns the right status
+  let payload;
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch {
+    throw { status: 401, message: "Invalid refresh token" };
+  }
   const userId = String(payload.id);
 
   const user = await User.findById(userId);

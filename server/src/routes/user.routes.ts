@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getProfile, updateProfile, uploadAvatar } from "../controllers/user.controller";
+import { getPostsByUser } from "../controllers/post.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import upload from "../utils/multer";
 
@@ -80,3 +81,25 @@ userRouter.put("/me", authMiddleware, updateProfile);
  *         description: Unauthorized
  */
 userRouter.post("/me/avatar", authMiddleware, upload.single("avatar"), uploadAvatar);
+
+/**
+ * @openapi
+ * /users/{id}/posts:
+ *   get:
+ *     summary: Get all posts by a specific user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Array of posts by the user (newest first)
+ *       400:
+ *         description: Invalid user ID format
+ */
+// public — no auth required to view someone's posts on their profile page
+userRouter.get("/:id/posts", getPostsByUser);

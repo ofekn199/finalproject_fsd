@@ -9,7 +9,7 @@ beforeAll(async () => {
   await mongoose.connect(mongoUri);
 });
 
-afterEach(async () => {
+afterAll(async () => {
   const collections = mongoose.connection.collections;
 
   for (const key of Object.keys(collections)) {
