@@ -12,3 +12,23 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
+
+// Automatically attach the stored access token to every request.
+// Registered at module level (not in a React effect) so it is ready before
+// any component fires its first data-fetch on mount.
+const STORAGE_KEY = "arenax_auth_tokens";
+api.interceptors.request.use((config) => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      const { accessToken } = JSON.parse(stored);
+      if (accessToken) {
+        config.headers = config.headers ?? {};
+        config.headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+    } catch {
+      // malformed entry — skip
+    }
+  }
+  return config;
+});

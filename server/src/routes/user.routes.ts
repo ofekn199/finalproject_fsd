@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getProfile, updateProfile, uploadAvatar } from "../controllers/user.controller";
 import { getPostsByUser } from "../controllers/post.controller";
-import { authMiddleware } from "../middlewares/auth.middleware";
+import { authMiddleware, optionalAuthMiddleware } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { updateProfileSchema } from "../utils/auth.schemas";
 import upload from "../utils/multer";
@@ -103,5 +103,5 @@ userRouter.post("/me/avatar", authMiddleware, upload.single("avatar"), uploadAva
  *       400:
  *         description: Invalid user ID format
  */
-// public — no auth required to view someone's posts on their profile page
-userRouter.get("/:id/posts", getPostsByUser);
+// optionalAuth — public, but includes isLikedByUser when token is present
+userRouter.get("/:id/posts", optionalAuthMiddleware, getPostsByUser);

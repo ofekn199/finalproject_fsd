@@ -19,6 +19,26 @@ export interface AuthRequest extends Request {
   };
 }
 
+/**
+ * optionalAuthMiddleware — same as authMiddleware but never rejects.
+ * If a valid Bearer token is present it sets req.user; otherwise it skips silently.
+ * Use this on public routes that benefit from knowing the requester's identity
+ * (e.g. to include isLikedByUser in the feed).
+ */
+export function optionalAuthMiddleware(req: AuthRequest, _res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const payload = verifyAccessToken(token);
+      req.user = { id: String(payload.id) };
+    }
+  } catch {
+    // invalid/expired token — treat as unauthenticated, don't block
+  }
+  next();
+}
+
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;

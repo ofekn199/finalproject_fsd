@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import * as postService from "../services/post.service";
@@ -26,7 +26,7 @@ export async function createPost(req: AuthRequest, res: Response, next: NextFunc
 
 // GET /posts — returns paginated posts, newest first
 // Optional query params: page (default 1), limit (default 10), userId (filter by author)
-export async function getFeed(req: Request, res: Response, next: NextFunction) {
+export async function getFeed(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
@@ -36,7 +36,7 @@ export async function getFeed(req: Request, res: Response, next: NextFunction) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    const result = await postService.getFeed(page, limit, userId);
+    const result = await postService.getFeed(page, limit, userId, req.user?.id);
     res.json(result);
   } catch (err) {
     next(err);
@@ -44,7 +44,7 @@ export async function getFeed(req: Request, res: Response, next: NextFunction) {
 }
 
 // GET /posts/:id — returns a single post by its MongoDB ID
-export async function getPostById(req: Request, res: Response, next: NextFunction) {
+export async function getPostById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
 
@@ -53,7 +53,7 @@ export async function getPostById(req: Request, res: Response, next: NextFunctio
       return res.status(400).json({ message: "Invalid post ID" });
     }
 
-    const post = await postService.getPostById(id);
+    const post = await postService.getPostById(id, req.user?.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     res.json(post);
@@ -111,7 +111,7 @@ export async function deletePost(req: AuthRequest, res: Response, next: NextFunc
 // GET /users/:id/posts — returns paginated posts by a specific user (profile page)
 // Accepts optional ?page and ?limit query params (same defaults/caps as GET /posts)
 // Returns { items, page, limit, hasMore } — consistent shape with GET /posts
-export async function getPostsByUser(req: Request, res: Response, next: NextFunction) {
+export async function getPostsByUser(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
 
@@ -122,7 +122,7 @@ export async function getPostsByUser(req: Request, res: Response, next: NextFunc
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
 
-    const result = await postService.getFeed(page, limit, id);
+    const result = await postService.getFeed(page, limit, id, req.user?.id);
     res.json(result);
   } catch (err) {
     next(err);

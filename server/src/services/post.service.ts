@@ -11,14 +11,23 @@
 import fs from "fs";
 import path from "path";
 import { Post, IPost } from "../models/post.model";
+import { Like } from "../models/like.model";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface FeedResult {
-  items: IPost[];
+  items: any[];
   page: number;
   limit: number;
   hasMore: boolean;
+}
+
+/** Batch-fetches which post IDs the given user has liked. Returns an empty set if no user. */
+async function getLikedSet(requesterId: string | undefined, postIds: string[]): Promise<Set<string>> {
+  if (!requesterId || postIds.length === 0) return new Set();
+  const likes = await Like.find({ user: requesterId, post: { $in: postIds } });
+  return new Set(likes.map(l => l.post.toString()));
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,11 +79,16 @@ export async function createPost(
  * Pass authorId to filter by a specific user (used on profile pages).
  * The author field is populated with username and profilePicture.
  */
-export async function getFeed(page: number, limit: number, authorId?: string): Promise<FeedResult> {
+export async function getFeed(
+  page: number,
+  limit: number,
+  authorId?: string,
+  requesterId?: string
+): Promise<FeedResult> {
   const filter = authorId ? { author: authorId } : {};
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
+  const [posts, total] = await Promise.all([
     Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -83,20 +97,24 @@ export async function getFeed(page: number, limit: number, authorId?: string): P
     Post.countDocuments(filter),
   ]);
 
-  return {
-    items,
-    page,
-    limit,
-    hasMore: skip + items.length < total,
-  };
+  const likedSet = await getLikedSet(requesterId, posts.map(p => p._id.toString()));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = posts.map(p => ({ ...(p.toObject() as any), isLikedByUser: likedSet.has(p._id.toString()) }));
+
+  return { items, page, limit, hasMore: skip + items.length < total };
 }
 
 /**
- * Returns a single post by ID.
+ * Returns a single post by ID with isLikedByUser flag.
  * Returns null if not found — the controller sends the 404.
  */
-export async function getPostById(id: string): Promise<IPost | null> {
-  return Post.findById(id).populate("author", "username profilePicture");
+export async function getPostById(id: string, requesterId?: string): Promise<any | null> {
+  const post = await Post.findById(id).populate("author", "username profilePicture");
+  if (!post) return null;
+  const likedSet = await getLikedSet(requesterId, [post._id.toString()]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { ...(post.toObject() as any), isLikedByUser: likedSet.has(post._id.toString()) };
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { type Post, updatePost, deletePost } from "../services/postService";
+import { type Post, updatePost, deletePost, toggleLike } from "../services/postService";
 import { useToast } from "../context/ToastContext";
 
 /*
@@ -44,6 +44,9 @@ export default function PostCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [liked, setLiked] = useState(post.isLikedByUser ?? false);
+  const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [liking, setLiking] = useState(false);
   const { showToast } = useToast();
 
   // The current user owns this post if their ID matches the author's ID
@@ -123,6 +126,20 @@ export default function PostCard({
     if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
     setEditImage(null);
     setImagePreview("");
+  };
+
+  const handleLike = async () => {
+    if (!accessToken || liking) return;
+    setLiking(true);
+    try {
+      const result = await toggleLike(post._id, accessToken);
+      setLiked(result.liked);
+      setLikesCount(result.likesCount);
+    } catch {
+      // non-critical — silently ignore
+    } finally {
+      setLiking(false);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -279,13 +296,18 @@ export default function PostCard({
 
       {/* Footer: likes and comments counts */}
       <div style={footerStyle}>
-        <span style={countStyle}>
-          {/* Heart icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <button
+          onClick={handleLike}
+          disabled={!accessToken || liking}
+          style={likeButtonStyle(liked)}
+          title={liked ? "Unlike" : "Like"}
+        >
+          {/* Heart icon — filled when liked */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
-          {post.likesCount}
-        </span>
+          {likesCount}
+        </button>
         <span style={countStyle}>
           {/* Comment icon */}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -388,3 +410,16 @@ const countStyle: React.CSSProperties = {
   fontSize: 13,
   color: "var(--muted)",
 };
+
+const likeButtonStyle = (liked: boolean): React.CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 5,
+  fontSize: 13,
+  color: liked ? "var(--purple)" : "var(--muted)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: 0,
+  transition: "color 0.15s",
+});

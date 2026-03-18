@@ -115,7 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Clean up the interceptor when AuthProvider unmounts
     return () => api.interceptors.response.eject(interceptorId);
   }, [login, logout]); // stable refs — this effect runs exactly once
 
