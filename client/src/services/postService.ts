@@ -20,6 +20,7 @@ export interface Post {
   likesCount: number;
   commentsCount: number;
   createdAt: string;
+  isLikedByUser?: boolean;
 }
 
 export interface FeedResult {
@@ -84,4 +85,15 @@ export const deletePost = async (
   await api.delete(`/posts/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+};
+
+// POST /posts/:id/like — toggles like on/off, returns { liked, likesCount }
+export const toggleLike = async (
+  id: string,
+  accessToken: string
+): Promise<{ liked: boolean; likesCount: number }> => {
+  const res = await api.post(`/posts/${id}/like`, null, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return res.data;
 };
