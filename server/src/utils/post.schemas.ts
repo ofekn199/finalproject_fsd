@@ -32,7 +32,7 @@ export const updatePostSchema = z.object({
       .trim()
       .min(1, "text cannot be empty")
       .max(500, "text cannot exceed 500 characters"),
-    removeImage: z.string().optional(),
+    removeImage: z.literal("true").optional(),
   }),
   params: z.object({
     id: z.string().min(1),

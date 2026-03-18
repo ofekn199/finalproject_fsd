@@ -32,6 +32,10 @@ export async function getFeed(req: Request, res: Response, next: NextFunction) {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
     const userId = req.query.userId as string | undefined;
 
+    if (userId && !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     const result = await postService.getFeed(page, limit, userId);
     res.json(result);
   } catch (err) {

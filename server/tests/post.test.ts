@@ -147,6 +147,12 @@ describe("GET /posts", () => {
     }
   });
 
+  it("should return 400 for an invalid userId query param", async () => {
+    const res = await request(app).get("/posts?userId=not-a-valid-id");
+
+    expect(res.status).toBe(400);
+  });
+
   it("should return posts in newest-first order", async () => {
     const res = await request(app).get("/posts?limit=50");
 

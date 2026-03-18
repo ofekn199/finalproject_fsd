@@ -28,9 +28,13 @@ export async function updateUserProfile(userId: string, fields: { bio?: string; 
     }
   }
 
+  const update: { bio?: string; username?: string } = {};
+  if (fields.bio !== undefined) update.bio = fields.bio;
+  if (fields.username !== undefined) update.username = fields.username;
+
   const user = await User.findByIdAndUpdate(
     userId,
-    fields,
+    update,
     { new: true, runValidators: true }
   ).select("-password -refreshToken -googleId");
 
