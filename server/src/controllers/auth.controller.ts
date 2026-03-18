@@ -1,9 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { registerUser, loginUser, refreshTokens, logoutUser } from "../services/auth.service";
-import { verifyAccessToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { loginWithGoogle } from "../services/google-auth.service";
 
+/**
+ * Auth controller — thin layer between HTTP and the auth service.
+ * Responsibilities: extract request data, call the service, send the response.
+ * All errors are forwarded to next() and handled by errorMiddleware.
+ */
+
+// POST /auth/register — creates a new user, returns their public info (no tokens)
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { username, email, password } = req.body;
@@ -19,16 +25,18 @@ export async function register(req: Request, res: Response, next: NextFunction) 
   }
 }
 
+// POST /auth/login — verifies credentials and returns access + refresh tokens
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { username, password } = req.body;
     const tokens = await loginUser(username, password);
-
     res.json(tokens);
   } catch (err) {
     next(err);
   }
 }
+
+// POST /auth/refresh — exchanges a valid refresh token for a new token pair
 export async function refresh(req: Request, res: Response, next: NextFunction) {
   try {
     const { refreshToken } = req.body;
@@ -39,6 +47,8 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// POST /auth/logout — invalidates the refresh token in the DB
+// req.user is set by authMiddleware (Bearer token must be present)
 export async function logout(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     if (!req.user) {
@@ -52,6 +62,7 @@ export async function logout(req: AuthRequest, res: Response, next: NextFunction
   }
 }
 
+// POST /auth/google — receives Google ID token from frontend, returns our own tokens
 export async function googleLogin(req: Request, res: Response, next: NextFunction) {
   try {
     const { credential } = req.body;

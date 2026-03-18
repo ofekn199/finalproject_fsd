@@ -6,10 +6,12 @@ beforeAll(async () => {
     throw new Error("Missing MONGO_URI for tests");
   }
 
-  await mongoose.connect(mongoUri);
+  // Use a dedicated test database so tests never touch dev/prod data
+  const testUri = mongoUri.replace(/\/([^/?]+)(\?|$)/, "/finalproject_fsd_test$2");
+  await mongoose.connect(testUri);
 });
 
-afterEach(async () => {
+afterAll(async () => {
   const collections = mongoose.connection.collections;
 
   for (const key of Object.keys(collections)) {
