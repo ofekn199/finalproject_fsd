@@ -127,6 +127,109 @@ it("should reject logout without token", async () => {
   expect(res.body.message).toBe("Missing access token");
 });
 
-  
+it("should not allow duplicate email", async () => {
+  await request(app).post("/auth/register").send({
+    username: "user_email_a",
+    email: "duplicate@example.com",
+    password: "Pass1234!",
+  });
+
+  const res = await request(app).post("/auth/register").send({
+    username: "user_email_b",
+    email: "duplicate@example.com",
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(409);
+  expect(res.body.message).toBe("Email already exists");
+});
+
+it("should reject login for unknown username", async () => {
+  const res = await request(app).post("/auth/login").send({
+    username: "ghost_user_xyz",
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(401);
+  expect(res.body.message).toBe("Invalid credentials");
+});
+
+it("should reject an invalid refresh token", async () => {
+  const res = await request(app).post("/auth/refresh").send({
+    refreshToken: "this.is.not.a.valid.token",
+  });
+
+  expect(res.status).toBe(401);
+});
+
+it("should reject reuse of an already-rotated refresh token", async () => {
+  await request(app).post("/auth/register").send({
+    username: "reuse_token_user",
+    email: "reuse_token@example.com",
+    password: "Pass1234!",
+  });
+
+  const loginRes = await request(app).post("/auth/login").send({
+    username: "reuse_token_user",
+    password: "Pass1234!",
+  });
+
+  const oldRefreshToken = loginRes.body.refreshToken;
+
+  // First refresh — rotates the token, oldRefreshToken is now invalid
+  await request(app).post("/auth/refresh").send({ refreshToken: oldRefreshToken });
+
+  // Second refresh with the old token — should be rejected (reuse detection)
+  const reuseRes = await request(app).post("/auth/refresh").send({
+    refreshToken: oldRefreshToken,
+  });
+
+  expect(reuseRes.status).toBe(401);
+});
+
+it("should reject register when password is missing", async () => {
+  const res = await request(app).post("/auth/register").send({
+    username: "no_pass_user",
+    email: "no_pass@example.com",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject register when email is missing", async () => {
+  const res = await request(app).post("/auth/register").send({
+    username: "no_email_user",
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject login when username is missing", async () => {
+  const res = await request(app).post("/auth/login").send({
+    password: "Pass1234!",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject login when password is missing", async () => {
+  const res = await request(app).post("/auth/login").send({
+    username: "some_user",
+  });
+
+  expect(res.status).toBe(400);
+  expect(res.body.message).toBe("Validation failed");
+});
+
+it("should reject refresh when refreshToken is missing", async () => {
+  const res = await request(app).post("/auth/refresh").send({});
+
+  expect(res.status).toBe(400);
+});
+
 });
 
