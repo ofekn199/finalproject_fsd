@@ -2,6 +2,8 @@ import { Router } from "express";
 import { getProfile, updateProfile, uploadAvatar } from "../controllers/user.controller";
 import { getPostsByUser } from "../controllers/post.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { updateProfileSchema } from "../utils/auth.schemas";
 import upload from "../utils/multer";
 
 
@@ -52,7 +54,7 @@ userRouter.get("/:id", getProfile);
  *       401:
  *         description: Unauthorized
  */
-userRouter.put("/me", authMiddleware, updateProfile);
+userRouter.put("/me", authMiddleware, validate(updateProfileSchema), updateProfile);
 
 /**
  * @openapi

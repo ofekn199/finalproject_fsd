@@ -95,8 +95,9 @@ export async function deletePost(req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
-// GET /users/:id/posts — returns all posts by a specific user (profile page)
-// Reuses getFeed with a userId filter — validates the ID format first
+// GET /users/:id/posts — returns paginated posts by a specific user (profile page)
+// Accepts optional ?page and ?limit query params (same defaults/caps as GET /posts)
+// Returns { items, page, limit, hasMore } — consistent shape with GET /posts
 export async function getPostsByUser(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
@@ -105,8 +106,11 @@ export async function getPostsByUser(req: Request, res: Response, next: NextFunc
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    const result = await postService.getFeed(1, 1000, id);
-    res.json(result.items);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+
+    const result = await postService.getFeed(page, limit, id);
+    res.json(result);
   } catch (err) {
     next(err);
   }

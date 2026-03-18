@@ -36,3 +36,11 @@ export const googleLoginSchema = z.object({
     credential: z.string().min(1),
   }),
 });
+
+// PUT /users/me — optional bio (max 300) and/or username update
+export const updateProfileSchema = z.object({
+  body: z.object({
+    bio: z.string().max(300).optional(),
+    username: z.string().min(3).max(30).optional(),
+  }),
+});

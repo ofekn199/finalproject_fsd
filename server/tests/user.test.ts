@@ -183,20 +183,33 @@ describe("POST /users/me/avatar", () => {
 // ── GET /users/:id/posts ─────────────────────────────────────────────────────
 
 describe("GET /users/:id/posts", () => {
-  it("should return all posts by a specific user", async () => {
+  it("should return paginated posts by a specific user", async () => {
     const res = await request(app).get(`/users/${otherUser.userId}/posts`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(2);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items.length).toBe(2);
+    expect(typeof res.body.page).toBe("number");
+    expect(typeof res.body.limit).toBe("number");
+    expect(typeof res.body.hasMore).toBe("boolean");
   });
 
-  it("should return an empty array when the user has no posts", async () => {
+  it("should return empty items when the user has no posts", async () => {
     const res = await request(app).get(`/users/${owner.userId}/posts`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(0);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items.length).toBe(0);
+    expect(res.body.hasMore).toBe(false);
+  });
+
+  it("should respect page and limit query params", async () => {
+    const res = await request(app).get(`/users/${otherUser.userId}/posts?page=1&limit=1`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.length).toBe(1);
+    expect(res.body.limit).toBe(1);
+    expect(res.body.hasMore).toBe(true);
   });
 
   it("should return 400 for an invalid user ID format", async () => {
@@ -209,7 +222,7 @@ describe("GET /users/:id/posts", () => {
     const res = await request(app).get(`/users/${otherUser.userId}/posts`);
 
     expect(res.status).toBe(200);
-    expect(res.body[0].author).toBeDefined();
-    expect(res.body[0].author.username).toBeDefined();
+    expect(res.body.items[0].author).toBeDefined();
+    expect(res.body.items[0].author.username).toBeDefined();
   });
 });

@@ -25,16 +25,15 @@ export interface FeedResult {
 
 /**
  * Deletes an uploaded image file from disk.
- * Silently ignores errors (e.g. file already deleted).
+ * Uses async fs.promises.unlink to avoid blocking the event loop.
+ * Silently ignores errors (e.g. file already deleted, path mismatch).
  */
-function deleteImageFile(imageUrl: string): void {
+async function deleteImageFile(imageUrl: string): Promise<void> {
   try {
     // imageUrl is stored as "/uploads/filename.jpg" — strip the leading slash
     const filename = imageUrl.replace(/^\/uploads\//, "");
     const filePath = path.resolve("uploads", filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    await fs.promises.unlink(filePath);
   } catch {
     // Non-critical — log but don't fail the request
     console.warn("Could not delete post image:", imageUrl);
@@ -116,7 +115,7 @@ export async function updatePost(
   post.text = text;
   if (imageUrl !== undefined) {
     // Delete old image file before replacing or removing
-    if (post.imageUrl) deleteImageFile(post.imageUrl);
+    if (post.imageUrl) await deleteImageFile(post.imageUrl);
     post.imageUrl = imageUrl ?? undefined;
   }
   await post.save();
@@ -139,7 +138,7 @@ export async function deletePost(
   }
   // Clean up image from disk before removing the DB record
   if (post.imageUrl) {
-    deleteImageFile(post.imageUrl);
+    await deleteImageFile(post.imageUrl);
   }
   await post.deleteOne();
 }

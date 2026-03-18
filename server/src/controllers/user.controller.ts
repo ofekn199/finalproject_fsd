@@ -1,4 +1,5 @@
 import { Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { getUserById, updateUserProfile, updateUserAvatar } from "../services/user.service";
 
@@ -10,7 +11,11 @@ import { getUserById, updateUserProfile, updateUserAvatar } from "../services/us
 // GET /users/:id — returns public profile (no auth required)
 export async function getProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const user = await getUserById(req.params.id as string);
+    const id = req.params.id as string;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    const user = await getUserById(id);
     res.json(user);
   } catch (err) {
     next(err);

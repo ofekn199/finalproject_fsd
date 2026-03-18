@@ -253,6 +253,15 @@ describe("PUT /posts/:id", () => {
     expect(res.status).toBe(404);
   });
 
+  it("should return 400 for an invalid ObjectId format", async () => {
+    const res = await request(app)
+      .put("/posts/not-a-valid-id")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ text: "Bad ID" });
+
+    expect(res.status).toBe(400);
+  });
+
   it("should allow the owner to update the post image", async () => {
     const imagePath = path.resolve(__dirname, "fixtures", "test-image.png");
     const res = await request(app)
@@ -303,6 +312,14 @@ describe("DELETE /posts/:id", () => {
       .set("Authorization", `Bearer ${owner.accessToken}`);
 
     expect(res.status).toBe(404);
+  });
+
+  it("should return 400 for an invalid ObjectId format", async () => {
+    const res = await request(app)
+      .delete("/posts/not-a-valid-id")
+      .set("Authorization", `Bearer ${owner.accessToken}`);
+
+    expect(res.status).toBe(400);
   });
 
   it("should allow the owner to delete their post", async () => {
