@@ -28,9 +28,13 @@ export async function updateUserProfile(userId: string, fields: { bio?: string; 
     }
   }
 
+  const update: { bio?: string; username?: string } = {};
+  if (fields.bio !== undefined) update.bio = fields.bio;
+  if (fields.username !== undefined) update.username = fields.username;
+
   const user = await User.findByIdAndUpdate(
     userId,
-    fields,
+    update,
     { new: true, runValidators: true }
   ).select("-password -refreshToken -googleId");
 
@@ -41,7 +45,7 @@ export async function updateUserProfile(userId: string, fields: { bio?: string; 
 }
 
 // Replaces the user's avatar image:
-// 1. Deletes the old file from disk (to avoid orphaned files filling up storage)
+// 1. Deletes the old file from disk using async unlink (non-blocking, non-critical)
 // 2. Saves the new filename as a /uploads/... path in the database
 export async function updateUserAvatar(userId: string, filename: string) {
   const user = await User.findById(userId);
@@ -52,8 +56,10 @@ export async function updateUserAvatar(userId: string, filename: string) {
   // Clean up old avatar file from disk if it exists
   if (user.profilePicture) {
     const oldPath = path.join(process.cwd(), "uploads", path.basename(user.profilePicture));
-    if (fs.existsSync(oldPath)) {
-      fs.unlinkSync(oldPath);
+    try {
+      await fs.promises.unlink(oldPath);
+    } catch {
+      // non-critical — file may already be gone
     }
   }
 

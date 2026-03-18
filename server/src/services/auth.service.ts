@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import { User } from "../models/user.model";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
 
@@ -79,6 +80,10 @@ export async function refreshTokens(refreshToken: string) {
   }
   const userId = String(payload.id);
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw { status: 401, message: "Invalid refresh token" };
+  }
+
   const user = await User.findById(userId);
   if (!user || !user.refreshToken) {
     throw { status: 401, message: "Invalid refresh token" };
@@ -101,6 +106,7 @@ export async function refreshTokens(refreshToken: string) {
 
 // Logout — clears the refresh token from DB so it can never be reused
 export async function logoutUser(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) return;
   const user = await User.findById(userId);
   if (!user) return;
 

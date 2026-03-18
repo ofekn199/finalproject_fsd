@@ -2,9 +2,9 @@ import { api } from "../api/axios";
 
 /*
  * User service — API calls for profile features.
- * getProfile   — public, no token needed
- * updateBio    — requires access token (logged-in user only)
- * uploadAvatar — requires access token, sends multipart/form-data
+ * getProfile    — public, no token needed
+ * updateProfile — requires access token (logged-in user only)
+ * uploadAvatar  — requires access token, sends multipart/form-data
  */
 
 export interface UserProfile {
@@ -36,10 +36,7 @@ export const uploadAvatar = async (file: File, accessToken: string): Promise<{ p
   const form = new FormData();
   form.append("avatar", file);
   const res = await api.post("/users/me/avatar", form, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   return res.data;
 };

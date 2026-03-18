@@ -17,6 +17,7 @@ export const createPostSchema = z.object({
   body: z.object({
     text: z
       .string({ error: "text is required" })
+      .trim()
       .min(1, "text cannot be empty")
       .max(500, "text cannot exceed 500 characters"),
   }),
@@ -28,9 +29,10 @@ export const updatePostSchema = z.object({
   body: z.object({
     text: z
       .string({ error: "text is required" })
+      .trim()
       .min(1, "text cannot be empty")
       .max(500, "text cannot exceed 500 characters"),
-    removeImage: z.string().optional(),
+    removeImage: z.literal("true").optional(),
   }),
   params: z.object({
     id: z.string().min(1),

@@ -31,7 +31,17 @@ const storage = multer.diskStorage({
   },
 });
 
-// Export the configured multer instance — no file type filter here, routes can add their own
-const upload = multer({ storage });
+// Export the configured multer instance — 5 MB limit, images only
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+});
 
 export default upload;

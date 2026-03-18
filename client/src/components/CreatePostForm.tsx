@@ -35,6 +35,7 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
   };
 
   const handleRemoveImage = () => {
+    if (preview) URL.revokeObjectURL(preview);
     setImage(null);
     setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -48,6 +49,7 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
       const post = await createPost(text.trim(), accessToken, image ?? undefined);
       onCreated(post);
       // Clear the form after successful submit
+      if (preview) URL.revokeObjectURL(preview);
       setText("");
       setImage(null);
       setPreview(null);

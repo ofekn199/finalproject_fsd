@@ -42,6 +42,7 @@ export default function ProfilePage() {
   // User's posts
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState("");
 
   // Load profile + posts on mount
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function ProfilePage() {
     setPostsLoading(true);
     getAllPosts({ userId: id, limit: 100 })
       .then((result) => setPosts(result.items))
-      .catch(() => {/* silently fail */})
+      .catch(() => setPostsError("Failed to load posts"))
       .finally(() => setPostsLoading(false));
   }, [id]);
 
@@ -319,6 +320,8 @@ export default function ProfilePage() {
             <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
               <div className="spinner" />
             </div>
+          ) : postsError ? (
+            <div className="alert-error" style={{ textAlign: "center" }}>{postsError}</div>
           ) : posts.length === 0 ? (
             <div style={{ textAlign: "center", padding: "32px 0", color: "var(--muted)", fontSize: 14 }}>
               No posts yet.

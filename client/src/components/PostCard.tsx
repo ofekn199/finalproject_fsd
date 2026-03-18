@@ -99,7 +99,6 @@ export default function PostCard({
         setError("Failed to delete post");
       }
       setDeleting(false);
-      setConfirmDelete(false);
     }
   };
 
@@ -379,7 +378,8 @@ const footerStyle: React.CSSProperties = {
   display: "flex",
   gap: 16,
   paddingTop: 10,
-  borderTop: "1px solid rgba(255,255,255,0.07)",};
+  borderTop: "1px solid rgba(255,255,255,0.07)",
+};
 
 const countStyle: React.CSSProperties = {
   display: "flex",

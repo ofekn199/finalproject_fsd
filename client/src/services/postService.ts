@@ -50,10 +50,7 @@ export const createPost = async (
   if (image) form.append("image", image);
 
   const res = await api.post("/posts", form, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   return res.data;
 };
@@ -74,10 +71,7 @@ export const updatePost = async (
     form.append("image", image);
   }
   const res = await api.put(`/posts/${id}`, form, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   return res.data;
 };
