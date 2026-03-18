@@ -32,7 +32,15 @@ async function deleteImageFile(imageUrl: string): Promise<void> {
   try {
     // imageUrl is stored as "/uploads/filename.jpg" — strip the leading slash
     const filename = imageUrl.replace(/^\/uploads\//, "");
-    const filePath = path.resolve("uploads", filename);
+    const uploadsDir = path.resolve("uploads");
+    const filePath = path.resolve(uploadsDir, filename);
+
+    // Reject path traversal attempts (e.g. "/uploads/../../etc/passwd")
+    if (!filePath.startsWith(uploadsDir + path.sep) && filePath !== uploadsDir) {
+      console.warn("Blocked path traversal attempt:", imageUrl);
+      return;
+    }
+
     await fs.promises.unlink(filePath);
   } catch {
     // Non-critical — log but don't fail the request

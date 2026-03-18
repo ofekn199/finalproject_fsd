@@ -63,6 +63,11 @@ export async function getPostById(req: Request, res: Response, next: NextFunctio
 export async function updatePost(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
+
     const { text, removeImage } = req.body;
 
     // Determine image change intent:
@@ -87,6 +92,10 @@ export async function updatePost(req: AuthRequest, res: Response, next: NextFunc
 export async function deletePost(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
 
     await postService.deletePost(id, req.user!.id);
     res.json({ message: "Post deleted" });

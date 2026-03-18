@@ -99,7 +99,6 @@ export default function PostCard({
         setError("Failed to delete post");
       }
       setDeleting(false);
-      setConfirmDelete(false);
     }
   };
 
