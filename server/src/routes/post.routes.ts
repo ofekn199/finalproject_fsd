@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.middleware";
+import { authMiddleware, optionalAuthMiddleware } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import upload from "../utils/multer";
 import { createPost, getFeed, getPostById, updatePost, deletePost } from "../controllers/post.controller";
+import { toggleLike } from "../controllers/like.controller";
 import { createPostSchema, updatePostSchema, postIdSchema, feedQuerySchema } from "../utils/post.schemas";
 
 export const postRouter = Router();
@@ -61,8 +62,8 @@ postRouter.post("/", authMiddleware, upload.single("image"), validate(createPost
  *       200:
  *         description: Returns { items, page, limit, hasMore }
  */
-// public — no auth required to browse the feed
-postRouter.get("/", validate(feedQuerySchema), getFeed);
+// optionalAuth — public feed, but isLikedByUser is included when a token is present
+postRouter.get("/", optionalAuthMiddleware, validate(feedQuerySchema), getFeed);
 
 /**
  * @openapi
@@ -83,8 +84,8 @@ postRouter.get("/", validate(feedQuerySchema), getFeed);
  *       404:
  *         description: Post not found
  */
-// public — no auth required
-postRouter.get("/:id", validate(postIdSchema), getPostById);
+// optionalAuth — public, but isLikedByUser is included when a token is present
+postRouter.get("/:id", optionalAuthMiddleware, validate(postIdSchema), getPostById);
 
 /**
  * @openapi
@@ -154,3 +155,6 @@ postRouter.put("/:id", authMiddleware, upload.single("image"), validate(updatePo
  */
 // auth required — service enforces that only the author can delete
 postRouter.delete("/:id", authMiddleware, validate(postIdSchema), deletePost);
+
+// POST /posts/:id/like — toggles like on/off for the authenticated user
+postRouter.post("/:id/like", authMiddleware, toggleLike);
