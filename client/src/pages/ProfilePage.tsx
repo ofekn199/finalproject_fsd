@@ -5,6 +5,8 @@ import {
   getProfile,
   updateProfile,
   uploadAvatar,
+  getLikedPostsByUser,
+  getCommentedPostsByUser,
   type UserProfile,
 } from "../services/userService";
 import { getAllPosts, type Post } from "../services/postService";
@@ -56,6 +58,16 @@ export default function ProfilePage() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState("");
 
+  // Liked posts
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [likedPostsLoading, setLikedPostsLoading] = useState(false);
+  const [likedPostsError, setLikedPostsError] = useState("");
+
+  // Commented posts
+  const [commentedPosts, setCommentedPosts] = useState<Post[]>([]);
+  const [commentedPostsLoading, setCommentedPostsLoading] = useState(false);
+  const [commentedPostsError, setCommentedPostsError] = useState("");
+
   // Comments modal state for profile posts
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
@@ -69,11 +81,7 @@ export default function ProfilePage() {
   const totalLikes = posts.reduce((sum, post) => sum + post.likesCount, 0);
   const totalComments = posts.reduce((sum, post) => sum + post.commentsCount, 0);
 
-  // Temporary placeholder arrays for future backend integration
-  const commentedPosts: Post[] = [];
-  const likedPosts: Post[] = [];
-
-  // Load profile + posts on mount
+  // Load profile + posts + liked/commented relations on mount
   useEffect(() => {
     if (!id) return;
 
@@ -103,6 +111,24 @@ export default function ProfilePage() {
       .then((result) => setPosts(result.items))
       .catch(() => setPostsError("Failed to load posts"))
       .finally(() => setPostsLoading(false));
+
+    // Load liked posts
+    setLikedPostsLoading(true);
+    setLikedPostsError("");
+
+    getLikedPostsByUser(id)
+      .then((data) => setLikedPosts(data))
+      .catch(() => setLikedPostsError("Failed to load liked posts"))
+      .finally(() => setLikedPostsLoading(false));
+
+    // Load commented posts
+    setCommentedPostsLoading(true);
+    setCommentedPostsError("");
+
+    getCommentedPostsByUser(id)
+      .then((data) => setCommentedPosts(data))
+      .catch(() => setCommentedPostsError("Failed to load commented posts"))
+      .finally(() => setCommentedPostsLoading(false));
   }, [id]);
 
   const handleSaveBio = async () => {
@@ -198,6 +224,28 @@ export default function ProfilePage() {
           : p
       )
     );
+
+    setLikedPosts((prev) =>
+      prev.map((p) =>
+        p._id === postId
+          ? {
+              ...p,
+              commentsCount,
+            }
+          : p
+      )
+    );
+
+    setCommentedPosts((prev) =>
+      prev.map((p) =>
+        p._id === postId
+          ? {
+              ...p,
+              commentsCount,
+            }
+          : p
+      )
+    );
   };
 
   const avatarSrc = profile?.profilePicture
@@ -223,7 +271,11 @@ export default function ProfilePage() {
         <div className="profile-container">
           <div className="alert-error">{error}</div>
           <br />
-          <button className="btn" onClick={() => navigate("/feed")} type="button">
+          <button
+            className="btn"
+            onClick={() => navigate("/feed")}
+            type="button"
+          >
             ← Back to Feed
           </button>
         </div>
@@ -239,16 +291,18 @@ export default function ProfilePage() {
 
       <div className="profile-container">
         {/* Back */}
-        <button className="btn" onClick={() => navigate("/feed")} type="button">
+        <button
+          className="btn"
+          onClick={() => navigate("/feed")}
+          type="button"
+        >
           ← Back to Feed
         </button>
 
         {/* Profile card */}
         <div className="profile-card card">
-          {/* Hero */}
           <div className="profile-hero">
             <div className="profile-hero-inner">
-              {/* Avatar */}
               <div className="avatar-wrap">
                 {avatarSrc ? (
                   <img src={avatarSrc} alt="avatar" className="avatar-img" />
@@ -297,9 +351,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Identity */}
               <div className="profile-identity">
-                {/* Username — inline edit for owner */}
                 {isOwner && editingUsername ? (
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 6 }}
@@ -390,7 +442,6 @@ export default function ProfilePage() {
 
           <div className="profile-hr" />
 
-          {/* Bio */}
           <div className="profile-bio-section">
             <div className="bio-header">
               <span className="bio-label">About</span>
@@ -451,7 +502,6 @@ export default function ProfilePage() {
 
         {/* Wallet + Stats section */}
         <div className="profile-dashboard">
-          {/* Wallet card */}
           <div className="wallet-card card">
             <div className="wallet-header">
               <div>
@@ -488,7 +538,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats row */}
           <div className="profile-stats card">
             <div className="profile-stat-item">
               <strong>{totalPosts}</strong>
@@ -610,7 +659,17 @@ export default function ProfilePage() {
                 Commented Posts
               </p>
 
-              {commentedPosts.length === 0 ? (
+              {commentedPostsLoading ? (
+                <div
+                  style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}
+                >
+                  <div className="spinner" />
+                </div>
+              ) : commentedPostsError ? (
+                <div className="alert-error" style={{ textAlign: "center" }}>
+                  {commentedPostsError}
+                </div>
+              ) : commentedPosts.length === 0 ? (
                 <div className="profile-empty-state">
                   You have not commented on any posts yet.
                 </div>
@@ -645,7 +704,17 @@ export default function ProfilePage() {
                 Liked Posts
               </p>
 
-              {likedPosts.length === 0 ? (
+              {likedPostsLoading ? (
+                <div
+                  style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}
+                >
+                  <div className="spinner" />
+                </div>
+              ) : likedPostsError ? (
+                <div className="alert-error" style={{ textAlign: "center" }}>
+                  {likedPostsError}
+                </div>
+              ) : likedPosts.length === 0 ? (
                 <div className="profile-empty-state">
                   You have not liked any posts yet.
                 </div>

@@ -1,11 +1,20 @@
 import { Router } from "express";
-import { getProfile, updateProfile, uploadAvatar } from "../controllers/user.controller";
+import {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+  getLikedPostsByUserHandler,
+  getCommentedPostsByUserHandler,
+} from "../controllers/user.controller";
 import { getPostsByUser } from "../controllers/post.controller";
-import { authMiddleware, optionalAuthMiddleware } from "../middlewares/auth.middleware";
+import {
+  authMiddleware,
+  optionalAuthMiddleware,
+} from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { updateProfileSchema } from "../utils/auth.schemas";
+import { userIdParamsSchema } from "../utils/user-relations.schemas";
 import upload from "../utils/multer";
-
 
 export const userRouter = Router();
 
@@ -48,13 +57,21 @@ userRouter.get("/:id", getProfile);
  *               bio:
  *                 type: string
  *                 example: Esports enthusiast 🎮
+ *               username:
+ *                 type: string
+ *                 example: ArenaXPlayer
  *     responses:
  *       200:
  *         description: Updated user profile
  *       401:
  *         description: Unauthorized
  */
-userRouter.put("/me", authMiddleware, validate(updateProfileSchema), updateProfile);
+userRouter.put(
+  "/me",
+  authMiddleware,
+  validate(updateProfileSchema),
+  updateProfile
+);
 
 /**
  * @openapi
@@ -82,7 +99,12 @@ userRouter.put("/me", authMiddleware, validate(updateProfileSchema), updateProfi
  *       401:
  *         description: Unauthorized
  */
-userRouter.post("/me/avatar", authMiddleware, upload.single("avatar"), uploadAvatar);
+userRouter.post(
+  "/me/avatar",
+  authMiddleware,
+  upload.single("avatar"),
+  uploadAvatar
+);
 
 /**
  * @openapi
@@ -105,3 +127,53 @@ userRouter.post("/me/avatar", authMiddleware, upload.single("avatar"), uploadAva
  */
 // optionalAuth — public, but includes isLikedByUser when token is present
 userRouter.get("/:id/posts", optionalAuthMiddleware, getPostsByUser);
+
+/**
+ * @openapi
+ * /users/{id}/liked-posts:
+ *   get:
+ *     summary: Get posts liked by a specific user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Array of liked posts
+ *       400:
+ *         description: Invalid user ID format
+ */
+userRouter.get(
+  "/:id/liked-posts",
+  validate(userIdParamsSchema),
+  getLikedPostsByUserHandler
+);
+
+/**
+ * @openapi
+ * /users/{id}/commented-posts:
+ *   get:
+ *     summary: Get posts commented on by a specific user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Array of commented posts
+ *       400:
+ *         description: Invalid user ID format
+ */
+userRouter.get(
+  "/:id/commented-posts",
+  validate(userIdParamsSchema),
+  getCommentedPostsByUserHandler
+);
