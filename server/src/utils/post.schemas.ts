@@ -1,56 +1,75 @@
 /**
- * Post Validation Schemas (Zod)
+ * Post validation schemas (Zod)
  *
- * Each schema validates { body, query, params } for a specific endpoint.
- * Passed to the validate() middleware before the controller runs.
+ * Each schema validates request data before it reaches the controller.
+ * The validate() middleware parses:
+ * - body
+ * - query
+ * - params
  *
- * createPostSchema  → POST /posts
- * updatePostSchema  → PUT  /posts/:id
- * postIdSchema      → GET/DELETE /posts/:id
- * feedQuerySchema   → GET /posts
+ * Current phase:
+ * - createPostSchema → POST /posts
+ * - getPostsSchema   → GET /posts
+ *
+ * Future phase:
+ * - updatePostSchema → PUT /posts/:id
+ * - postIdSchema     → GET /posts/:id, DELETE /posts/:id
  */
 
 import { z } from "zod";
 
-// POST /posts — body must have text (1–500 chars); image is handled by multer, not validated here
+/**
+ * POST /posts
+ * A post must include text content.
+ * imageUrl is optional for now.
+ * Later, when using multer, the uploaded file will be handled separately.
+ */
 export const createPostSchema = z.object({
   body: z.object({
     text: z
-      .string({ error: "text is required" })
+      .string()
       .trim()
-      .min(1, "text cannot be empty")
-      .max(500, "text cannot exceed 500 characters"),
+      .min(1, "Text cannot be empty")
+      .max(500, "Text cannot exceed 500 characters"),
+    imageUrl: z.string().optional(),
   }),
 });
 
-// PUT /posts/:id — same text rules + params.id must be a non-empty string
-// removeImage is an optional form field ("true") to remove the existing image
-export const updatePostSchema = z.object({
-  body: z.object({
-    text: z
-      .string({ error: "text is required" })
-      .trim()
-      .min(1, "text cannot be empty")
-      .max(500, "text cannot exceed 500 characters"),
-    removeImage: z.literal("true").optional(),
-  }),
-  params: z.object({
-    id: z.string().min(1),
-  }),
-});
-
-// GET/DELETE /posts/:id — just validates that :id is present
-export const postIdSchema = z.object({
-  params: z.object({
-    id: z.string().min(1),
-  }),
-});
-
-// GET /posts — optional pagination + optional userId filter (all parsed as strings in controller)
-export const feedQuerySchema = z.object({
+/**
+ * GET /posts
+ * page and limit arrive as strings in query params.
+ * They are converted to numbers later inside the controller.
+ */
+export const getPostsSchema = z.object({
   query: z.object({
     page: z.string().optional(),
     limit: z.string().optional(),
-    userId: z.string().optional(),
+  }),
+});
+
+/**
+ * FUTURE: PUT /posts/:id
+ * Keep this schema for the next phase when edit post is implemented.
+ */
+export const updatePostSchema = z.object({
+  body: z.object({
+    text: z
+      .string()
+      .trim()
+      .min(1, "Text cannot be empty")
+      .max(500, "Text cannot exceed 500 characters"),
+    removeImage: z.literal("true").optional(),
+  }),
+  params: z.object({
+    id: z.string().min(1, "Post id is required"),
+  }),
+});
+
+/**
+ * FUTURE: GET /posts/:id or DELETE /posts/:id
+ */
+export const postIdSchema = z.object({
+  params: z.object({
+    id: z.string().min(1, "Post id is required"),
   }),
 });

@@ -9,6 +9,7 @@ import { healthRouter } from "./routes/health.routes";
 import { authRouter } from "./routes/auth.routes";
 import { userRouter } from "./routes/user.routes";
 import { postRouter } from "./routes/post.routes";
+import { commentRouter } from "./routes/comment.routes";
 
 // Create and configure the Express app
 export function createApp() {
@@ -26,6 +27,7 @@ export function createApp() {
   app.use("/auth", authRouter);
   app.use("/users", userRouter);
   app.use("/posts", postRouter);
+  app.use(commentRouter);
 
   // Global error handler (should be last middleware)
   app.use(errorMiddleware);
