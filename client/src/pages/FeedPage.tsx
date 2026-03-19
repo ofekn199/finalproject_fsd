@@ -6,6 +6,7 @@ import { logoutRequest } from "../services/authService";
 import { getAllPosts, type Post } from "../services/postService";
 import PostCard from "../components/PostCard";
 import CreatePostForm from "../components/CreatePostForm";
+import CommentsModal from "../components/CommentsModal";
 
 /*
  * FeedPage — main page of the app after login.
@@ -15,13 +16,15 @@ import CreatePostForm from "../components/CreatePostForm";
  *   - CreatePostForm (only shown to logged-in users)
  *   - List of PostCards loaded from GET /posts
  *   - "Load more" button when there are more pages
+ *   - Comments modal opened on top of the feed
  *
  * State:
- *   posts      — current list of posts (prepend on create, filter on delete)
- *   page       — current pagination page (starts at 1)
- *   hasMore    — whether there are more posts to load
- *   loading    — initial load spinner
+ *   posts       — current list of posts (prepend on create, filter on delete)
+ *   page        — current pagination page (starts at 1)
+ *   hasMore     — whether there are more posts to load
+ *   loading     — initial load spinner
  *   loadingMore — spinner for the "Load more" button
+ *   selectedPostId — currently opened post inside the comments modal
  */
 
 export default function FeedPage() {
@@ -36,6 +39,7 @@ export default function FeedPage() {
   const [feedError, setFeedError] = useState("");
   const [logoutError, setLogoutError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // Load the first page of posts on mount
   useEffect(() => {
@@ -90,6 +94,30 @@ export default function FeedPage() {
     setPosts((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
   };
 
+  // Open comments modal for a selected post
+  const handleOpenComments = (postId: string) => {
+    setSelectedPostId(postId);
+  };
+
+  // Close comments modal
+  const handleCloseComments = () => {
+    setSelectedPostId(null);
+  };
+
+  // Update a post locally after a new comment is added inside the modal
+  const handleCommentsCountUpdated = (postId: string, commentsCount: number) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p._id === postId
+          ? {
+              ...p,
+              commentsCount,
+            }
+          : p
+      )
+    );
+  };
+
   const handleLogout = async () => {
     setLoggingOut(true);
     setLogoutError("");
@@ -107,13 +135,14 @@ export default function FeedPage() {
 
   return (
     <div style={pageStyle}>
-
       {/* ── Topbar ── */}
       <header style={topbarStyle}>
         <div style={topbarInnerStyle}>
           <div style={brandStyle}>
             <div style={logoStyle}>A</div>
-            <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>ArenaX</span>
+            <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>
+              ArenaX
+            </span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -122,9 +151,18 @@ export default function FeedPage() {
                 className="btn btn-ghost"
                 onClick={() => navigate(`/profile/${userId}`)}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="4"/>
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                 </svg>
                 My Profile
               </button>
@@ -134,10 +172,19 @@ export default function FeedPage() {
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
               {loggingOut ? "Signing out…" : "Sign out"}
             </button>
@@ -147,9 +194,10 @@ export default function FeedPage() {
 
       {/* ── Main content ── */}
       <main style={mainStyle}>
-
         {logoutError && (
-          <div className="alert-error" style={{ marginBottom: 16 }}>{logoutError}</div>
+          <div className="alert-error" style={{ marginBottom: 16 }}>
+            {logoutError}
+          </div>
         )}
 
         {/* Create post form — only for logged-in users */}
@@ -170,8 +218,18 @@ export default function FeedPage() {
         ) : posts.length === 0 ? (
           <div style={emptyStyle}>
             <div style={emptyIconStyle}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.5 }}
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
             <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 12 }}>
@@ -188,6 +246,7 @@ export default function FeedPage() {
                 currentUserId={userId}
                 onDelete={handlePostDeleted}
                 onUpdate={handlePostUpdated}
+                onOpenComments={handleOpenComments}
               />
             ))}
 
@@ -200,13 +259,33 @@ export default function FeedPage() {
                   disabled={loadingMore}
                   style={{ minWidth: 140 }}
                 >
-                  {loadingMore ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "Load more"}
+                  {loadingMore ? (
+                    <>
+                      <div
+                        className="spinner"
+                        style={{ width: 16, height: 16, borderWidth: 2 }}
+                      />
+                      {" "}Loading…
+                    </>
+                  ) : (
+                    "Load more"
+                  )}
                 </button>
               </div>
             )}
           </>
         )}
       </main>
+
+      {/* Comments modal */}
+      {selectedPostId && (
+        <CommentsModal
+          postId={selectedPostId}
+          accessToken={tokens?.accessToken ?? null}
+          onClose={handleCloseComments}
+          onCommentsCountUpdated={handleCommentsCountUpdated}
+        />
+      )}
     </div>
   );
 }

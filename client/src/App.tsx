@@ -1,9 +1,11 @@
 /**
  * App.tsx — defines all client-side routes.
  *
- * Public routes  (/,  /register)    redirect to /feed if already logged in
- * Protected routes (/feed, /profile/:id) redirect to / if not logged in
+ * Public routes  (/, /register) → redirect to /feed if already logged in
+ * Protected routes (/feed, /profile/:id)
+ * → redirect to / if not logged in
  */
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -17,14 +19,21 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public routes */}
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/feed" replace /> : <LoginPage />}
+        element={
+          isAuthenticated ? <Navigate to="/feed" replace /> : <LoginPage />
+        }
       />
       <Route
         path="/register"
-        element={isAuthenticated ? <Navigate to="/feed" replace /> : <RegisterPage />}
+        element={
+          isAuthenticated ? <Navigate to="/feed" replace /> : <RegisterPage />
+        }
       />
+
+      {/* Protected routes */}
       <Route
         path="/feed"
         element={
@@ -33,6 +42,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/profile/:id"
         element={
@@ -41,6 +51,9 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
