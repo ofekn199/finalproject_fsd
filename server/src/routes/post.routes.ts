@@ -4,7 +4,7 @@ import { validate } from "../middlewares/validate.middleware";
 import upload from "../utils/multer";
 import { createPost, getFeed, getPostById, updatePost, deletePost } from "../controllers/post.controller";
 import { toggleLike } from "../controllers/like.controller";
-import { createPostSchema, updatePostSchema, postIdSchema, feedQuerySchema } from "../utils/post.schemas";
+import { createPostSchema, updatePostSchema, postIdSchema, getPostsSchema } from "../utils/post.schemas";
 
 export const postRouter = Router();
 
@@ -63,7 +63,7 @@ postRouter.post("/", authMiddleware, upload.single("image"), validate(createPost
  *         description: Returns { items, page, limit, hasMore }
  */
 // optionalAuth — public feed, but isLikedByUser is included when a token is present
-postRouter.get("/", optionalAuthMiddleware, validate(feedQuerySchema), getFeed);
+postRouter.get("/", optionalAuthMiddleware, validate(getPostsSchema), getFeed);
 
 /**
  * @openapi
