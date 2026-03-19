@@ -29,6 +29,11 @@ export default function ProfilePage() {
   const isOwner = !!userId && userId === id;
   const { showToast } = useToast();
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState<
+    "posts" | "commented" | "liked" | "wallet"
+  >("posts");
+
   // Bio editing
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
@@ -53,6 +58,20 @@ export default function ProfilePage() {
 
   // Comments modal state for profile posts
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  // Temporary wallet and profile stats data
+  // These can be replaced later with real backend values
+  const walletBalance = 120.5;
+  const availableBalance = 95.0;
+  const pendingBalance = 25.5;
+
+  const totalPosts = posts.length;
+  const totalLikes = posts.reduce((sum, post) => sum + post.likesCount, 0);
+  const totalComments = posts.reduce((sum, post) => sum + post.commentsCount, 0);
+
+  // Temporary placeholder arrays for future backend integration
+  const commentedPosts: Post[] = [];
+  const likedPosts: Post[] = [];
 
   // Load profile + posts on mount
   useEffect(() => {
@@ -204,7 +223,7 @@ export default function ProfilePage() {
         <div className="profile-container">
           <div className="alert-error">{error}</div>
           <br />
-          <button className="btn" onClick={() => navigate("/feed")}>
+          <button className="btn" onClick={() => navigate("/feed")} type="button">
             ← Back to Feed
           </button>
         </div>
@@ -220,7 +239,7 @@ export default function ProfilePage() {
 
       <div className="profile-container">
         {/* Back */}
-        <button className="btn" onClick={() => navigate("/feed")}>
+        <button className="btn" onClick={() => navigate("/feed")} type="button">
           ← Back to Feed
         </button>
 
@@ -430,60 +449,261 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Posts section */}
-        <div style={{ marginTop: 32 }}>
-          <p
-            style={{
-              fontWeight: 600,
-              fontSize: 14,
-              color: "var(--muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: 16,
-            }}
-          >
-            Posts
-          </p>
+        {/* Wallet + Stats section */}
+        <div className="profile-dashboard">
+          {/* Wallet card */}
+          <div className="wallet-card card">
+            <div className="wallet-header">
+              <div>
+                <p className="wallet-label">ArenaX Wallet</p>
+                <h3 className="wallet-balance">${walletBalance.toFixed(2)}</h3>
+              </div>
 
-          {postsLoading ? (
-            <div
-              style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}
-            >
-              <div className="spinner" />
+              <div className="wallet-badge">Active</div>
             </div>
-          ) : postsError ? (
-            <div className="alert-error" style={{ textAlign: "center" }}>
-              {postsError}
+
+            <div className="wallet-meta">
+              <div className="wallet-meta-item">
+                <span className="wallet-meta-label">Available</span>
+                <strong className="wallet-meta-value">
+                  ${availableBalance.toFixed(2)}
+                </strong>
+              </div>
+
+              <div className="wallet-meta-item">
+                <span className="wallet-meta-label">Pending</span>
+                <strong className="wallet-meta-value">
+                  ${pendingBalance.toFixed(2)}
+                </strong>
+              </div>
             </div>
-          ) : posts.length === 0 ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "32px 0",
-                color: "var(--muted)",
-                fontSize: 14,
-              }}
-            >
-              No posts yet.
+
+            <div className="wallet-actions">
+              <button type="button" className="btn btn-primary">
+                Add Funds
+              </button>
+              <button type="button" className="btn">
+                Withdraw
+              </button>
             </div>
-          ) : (
-            posts.map((post) => (
-              <PostCard
-                key={post._id}
-                post={post}
-                accessToken={tokens?.accessToken ?? null}
-                currentUserId={userId}
-                onDelete={(postId) =>
-                  setPosts((prev) => prev.filter((p) => p._id !== postId))
-                }
-                onUpdate={(updated) =>
-                  setPosts((prev) =>
-                    prev.map((p) => (p._id === updated._id ? updated : p))
-                  )
-                }
-                onOpenComments={handleOpenComments}
-              />
-            ))
+          </div>
+
+          {/* Stats row */}
+          <div className="profile-stats card">
+            <div className="profile-stat-item">
+              <strong>{totalPosts}</strong>
+              <span>Posts</span>
+            </div>
+
+            <div className="profile-stat-item">
+              <strong>{totalLikes}</strong>
+              <span>Total Likes</span>
+            </div>
+
+            <div className="profile-stat-item">
+              <strong>{totalComments}</strong>
+              <span>Total Comments</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="profile-tabs">
+          <button
+            type="button"
+            className={`profile-tab${activeTab === "posts" ? " active" : ""}`}
+            onClick={() => setActiveTab("posts")}
+          >
+            My Posts
+          </button>
+
+          <button
+            type="button"
+            className={`profile-tab${activeTab === "commented" ? " active" : ""}`}
+            onClick={() => setActiveTab("commented")}
+          >
+            Commented
+          </button>
+
+          <button
+            type="button"
+            className={`profile-tab${activeTab === "liked" ? " active" : ""}`}
+            onClick={() => setActiveTab("liked")}
+          >
+            Liked
+          </button>
+
+          <button
+            type="button"
+            className={`profile-tab${activeTab === "wallet" ? " active" : ""}`}
+            onClick={() => setActiveTab("wallet")}
+          >
+            Wallet
+          </button>
+        </div>
+
+        {/* Tab content */}
+        <div style={{ marginTop: 24 }}>
+          {activeTab === "posts" && (
+            <>
+              <p
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 16,
+                }}
+              >
+                My Posts
+              </p>
+
+              {postsLoading ? (
+                <div
+                  style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}
+                >
+                  <div className="spinner" />
+                </div>
+              ) : postsError ? (
+                <div className="alert-error" style={{ textAlign: "center" }}>
+                  {postsError}
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="profile-empty-state">
+                  You have not published any posts yet.
+                </div>
+              ) : (
+                posts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    accessToken={tokens?.accessToken ?? null}
+                    currentUserId={userId}
+                    onDelete={(postId) =>
+                      setPosts((prev) => prev.filter((p) => p._id !== postId))
+                    }
+                    onUpdate={(updated) =>
+                      setPosts((prev) =>
+                        prev.map((p) => (p._id === updated._id ? updated : p))
+                      )
+                    }
+                    onOpenComments={handleOpenComments}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {activeTab === "commented" && (
+            <>
+              <p
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 16,
+                }}
+              >
+                Commented Posts
+              </p>
+
+              {commentedPosts.length === 0 ? (
+                <div className="profile-empty-state">
+                  You have not commented on any posts yet.
+                </div>
+              ) : (
+                commentedPosts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    accessToken={tokens?.accessToken ?? null}
+                    currentUserId={userId}
+                    onDelete={() => {}}
+                    onUpdate={() => {}}
+                    onOpenComments={handleOpenComments}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {activeTab === "liked" && (
+            <>
+              <p
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 16,
+                }}
+              >
+                Liked Posts
+              </p>
+
+              {likedPosts.length === 0 ? (
+                <div className="profile-empty-state">
+                  You have not liked any posts yet.
+                </div>
+              ) : (
+                likedPosts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    accessToken={tokens?.accessToken ?? null}
+                    currentUserId={userId}
+                    onDelete={() => {}}
+                    onUpdate={() => {}}
+                    onOpenComments={handleOpenComments}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {activeTab === "wallet" && (
+            <div className="wallet-panel card">
+              <div className="wallet-panel-header">
+                <div>
+                  <p className="wallet-label">ArenaX Wallet</p>
+                  <h3 className="wallet-balance">${walletBalance.toFixed(2)}</h3>
+                </div>
+                <div className="wallet-badge">Active</div>
+              </div>
+
+              <div className="wallet-meta">
+                <div className="wallet-meta-item">
+                  <span className="wallet-meta-label">Available</span>
+                  <strong className="wallet-meta-value">
+                    ${availableBalance.toFixed(2)}
+                  </strong>
+                </div>
+
+                <div className="wallet-meta-item">
+                  <span className="wallet-meta-label">Pending</span>
+                  <strong className="wallet-meta-value">
+                    ${pendingBalance.toFixed(2)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="wallet-actions">
+                <button type="button" className="btn btn-primary">
+                  Add Funds
+                </button>
+                <button type="button" className="btn">
+                  Withdraw
+                </button>
+              </div>
+
+              <div className="profile-empty-state" style={{ marginTop: 20 }}>
+                Transaction history will appear here in a future phase.
+              </div>
+            </div>
           )}
         </div>
       </div>
