@@ -1,32 +1,21 @@
 import { useState } from "react";
 import axios from "axios";
-import { type Post, updatePost, deletePost, toggleLike } from "../services/postService";
+import {
+  type Post,
+  updatePost,
+  deletePost,
+  toggleLike,
+} from "../services/postService";
 import { useToast } from "../context/ToastContext";
-
-/*
- * PostCard — displays a single post in the feed.
- *
- * - Shows author avatar (initial fallback), username, relative time
- * - Shows post text and optional image
- * - Shows likes and comments counters
- * - If the logged-in user is the post owner: Edit and Delete buttons appear
- *
- * Edit mode: textarea + image controls appear inline.
- *   Save → calls updatePost → toast "Post updated!" → parent updates list
- *   Cancel → discards changes, returns to display mode
- *
- * Delete: clicking Delete shows an inline confirmation.
- *   Confirm → calls deletePost → parent removes the card
- *   Cancel → returns to normal view
- */
+import "./PostCard.css";
 
 interface PostCardProps {
   post: Post;
   accessToken: string | null;
-  currentUserId: string | null; // used to show/hide owner actions
+  currentUserId: string | null;
   onDelete: (postId: string) => void;
   onUpdate: (updated: Post) => void;
-  onOpenComments: (postId: string) => void; // open comments modal from parent
+  onOpenComments: (postId: string) => void;
 }
 
 export default function PostCard({
@@ -39,7 +28,6 @@ export default function PostCard({
 }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
-  // undefined = no change, null = remove, File = replace
   const [editImage, setEditImage] = useState<File | null | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [saving, setSaving] = useState(false);
@@ -49,14 +37,11 @@ export default function PostCard({
   const [liked, setLiked] = useState(post.isLikedByUser ?? false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [liking, setLiking] = useState(false);
+
   const { showToast } = useToast();
 
-  // The current user owns this post if their ID matches the author's ID
   const isOwner = currentUserId === post.author._id;
 
-  // ── Helpers ──────────────────────────────────────────────────────────
-
-  // Format ISO date as a short relative string e.g. "2h ago", "3d ago"
   function timeAgo(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
@@ -67,17 +52,26 @@ export default function PostCard({
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  // ── Handlers ─────────────────────────────────────────────────────────
-
   const handleSave = async () => {
     if (!accessToken || !editText.trim()) return;
+
     setSaving(true);
     setError("");
+
     try {
-      const updated = await updatePost(post._id, editText.trim(), accessToken, editImage);
+      const updated = await updatePost(
+        post._id,
+        editText.trim(),
+        accessToken,
+        editImage
+      );
       onUpdate(updated);
       setIsEditing(false);
-      if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+
+      if (imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+
       showToast("Post updated!", "success");
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -92,8 +86,10 @@ export default function PostCard({
 
   const handleDelete = async () => {
     if (!accessToken) return;
+
     setDeleting(true);
     setError("");
+
     try {
       await deletePost(post._id, accessToken);
       onDelete(post._id);
@@ -109,7 +105,11 @@ export default function PostCard({
 
   const handleCancelEdit = () => {
     setEditText(post.text);
-    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setEditImage(undefined);
     setImagePreview("");
     setIsEditing(false);
@@ -119,34 +119,39 @@ export default function PostCard({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setEditImage(file);
     setImagePreview(URL.createObjectURL(file));
   };
 
   const handleRemoveImage = () => {
-    if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setEditImage(null);
     setImagePreview("");
   };
 
   const handleLike = async () => {
     if (!accessToken || liking) return;
+
     setLiking(true);
     try {
       const result = await toggleLike(post._id, accessToken);
       setLiked(result.liked);
       setLikesCount(result.likesCount);
     } catch {
-      // non-critical — silently ignore
+      // Non-critical — ignore silently
     } finally {
       setLiking(false);
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────
-
-  // Resolve the image src to show in edit mode
   const editImageSrc =
     imagePreview ||
     (editImage === null
@@ -155,36 +160,37 @@ export default function PostCard({
         ? `${import.meta.env.VITE_API_URL}${post.imageUrl}`
         : "");
 
+  const displayImageSrc = post.imageUrl
+    ? `${import.meta.env.VITE_API_URL}${post.imageUrl}`
+    : "";
+
   return (
-    <div className="card" style={cardStyle}>
-      {/* Author row */}
-      <div style={headerStyle}>
-        <div style={avatarStyle}>
+    <div className="card post-card">
+      <div className="post-card__header">
+        <div className="post-card__avatar">
           {post.author.profilePicture ? (
             <img
               src={`${import.meta.env.VITE_API_URL}${post.author.profilePicture}`}
               alt={post.author.username}
-              style={avatarImgStyle}
+              className="post-card__avatar-img"
             />
           ) : (
-            // Fallback: show the first letter of the username
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--purple)" }}>
+            <span className="post-card__avatar-fallback">
               {post.author.username[0].toUpperCase()}
             </span>
           )}
         </div>
 
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{post.author.username}</div>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>{timeAgo(post.createdAt)}</div>
+        <div className="post-card__author">
+          <div className="post-card__username">{post.author.username}</div>
+          <div className="post-card__time">{timeAgo(post.createdAt)}</div>
         </div>
 
-        {/* Owner actions — only visible to the post author */}
         {isOwner && !isEditing && !confirmDelete && (
-          <div style={actionsStyle}>
+          <div className="post-card__actions">
             <button
-              className="btn btn-ghost"
-              style={{ padding: "4px 12px", fontSize: 12 }}
+              type="button"
+              className="btn btn-ghost post-card__small-btn"
               onClick={() => {
                 setIsEditing(true);
                 setError("");
@@ -193,8 +199,8 @@ export default function PostCard({
               Edit
             </button>
             <button
-              className="btn btn-danger"
-              style={{ padding: "4px 12px", fontSize: 12 }}
+              type="button"
+              className="btn btn-danger post-card__small-btn"
               onClick={() => {
                 setConfirmDelete(true);
                 setError("");
@@ -206,22 +212,21 @@ export default function PostCard({
         )}
       </div>
 
-      {/* Inline delete confirmation */}
       {confirmDelete && (
-        <div style={confirmBoxStyle}>
-          <span style={{ fontSize: 13 }}>Delete this post?</span>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div className="post-card__confirm">
+          <span className="post-card__confirm-text">Delete this post?</span>
+          <div className="post-card__confirm-actions">
             <button
-              className="btn btn-danger"
-              style={{ padding: "4px 14px", fontSize: 12 }}
+              type="button"
+              className="btn btn-danger post-card__small-btn"
               onClick={handleDelete}
               disabled={deleting}
             >
               {deleting ? "Deleting…" : "Yes, delete"}
             </button>
             <button
-              className="btn btn-ghost"
-              style={{ padding: "4px 14px", fontSize: 12 }}
+              type="button"
+              className="btn btn-ghost post-card__small-btn"
               onClick={() => setConfirmDelete(false)}
               disabled={deleting}
             >
@@ -231,64 +236,61 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Error message */}
-      {error && (
-        <div className="alert-error" style={{ margin: "8px 0" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="alert-error post-card__error">{error}</div>}
 
-      {/* Post body — edit mode or display mode */}
       {isEditing ? (
-        <div style={{ marginBottom: 12 }}>
+        <div className="post-card__editor">
           <textarea
-            className="input"
-            style={{ minHeight: 80, resize: "vertical" }}
+            className="input post-card__textarea"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             maxLength={500}
           />
 
-          {/* Image preview in edit mode */}
           {editImageSrc && (
-            <img src={editImageSrc} alt="Post image" style={{ ...postImageStyle, marginTop: 8 }} />
+            <div className="post-card__image-wrapper post-card__image-wrapper--edit">
+              <img
+                src={editImageSrc}
+                alt="Post preview"
+                className="post-card__image"
+              />
+            </div>
           )}
 
-          {/* Image controls: Remove (if image exists) + Add/Replace */}
-          <div style={imageControlsStyle}>
+          <div className="post-card__image-controls">
             {editImageSrc && (
               <button
-                className="btn btn-danger"
-                style={{ padding: "5px 14px", fontSize: 12 }}
-                onClick={handleRemoveImage}
                 type="button"
+                className="btn btn-danger post-card__small-btn"
+                onClick={handleRemoveImage}
               >
                 Remove image
               </button>
             )}
-            <label style={imageInputLabelStyle}>
+
+            <label className="post-card__image-label">
               {editImageSrc ? "Replace image" : "Add image"}
               <input
                 type="file"
                 accept="image/*"
-                style={{ display: "none" }}
+                className="post-card__image-input"
                 onChange={handleImageChange}
               />
             </label>
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <div className="post-card__editor-actions">
             <button
-              className="btn btn-primary"
-              style={{ flex: 1, padding: "8px 0" }}
+              type="button"
+              className="btn btn-primary post-card__editor-btn"
               onClick={handleSave}
               disabled={saving || !editText.trim()}
             >
               {saving ? "Saving…" : "Save"}
             </button>
             <button
-              className="btn"
-              style={{ flex: 1, padding: "8px 0" }}
+              type="button"
+              className="btn post-card__editor-btn"
               onClick={handleCancelEdit}
               disabled={saving}
             >
@@ -297,27 +299,27 @@ export default function PostCard({
           </div>
         </div>
       ) : (
-        <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 12 }}>{post.text}</p>
+        <p className="post-card__text">{post.text}</p>
       )}
 
-      {/* Post image (display mode only) */}
       {!isEditing && post.imageUrl && (
-        <img
-          src={`${import.meta.env.VITE_API_URL}${post.imageUrl}`}
-          alt="Post image"
-          style={postImageStyle}
-        />
+        <div className="post-card__image-wrapper">
+          <img
+            src={displayImageSrc}
+            alt="Post"
+            className="post-card__image"
+          />
+        </div>
       )}
 
-      {/* Footer: likes and comments counts */}
-      <div style={footerStyle}>
+      <div className="post-card__footer">
         <button
+          type="button"
           onClick={handleLike}
           disabled={!accessToken || liking}
-          style={likeButtonStyle(liked)}
+          className={`post-card__icon-btn ${liked ? "post-card__icon-btn--liked" : ""}`}
           title={liked ? "Unlike" : "Like"}
         >
-          {/* Heart icon — filled when liked */}
           <svg
             width="14"
             height="14"
@@ -336,10 +338,9 @@ export default function PostCard({
         <button
           type="button"
           onClick={() => onOpenComments(post._id)}
-          style={commentButtonStyle}
+          className="post-card__icon-btn"
           title="Open comments"
         >
-          {/* Comment icon */}
           <svg
             width="14"
             height="14"
@@ -358,111 +359,3 @@ export default function PostCard({
     </div>
   );
 }
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-const cardStyle: React.CSSProperties = {
-  padding: "18px 20px",
-  marginBottom: 16,
-};
-
-const headerStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  marginBottom: 12,
-};
-
-const avatarStyle: React.CSSProperties = {
-  width: 38,
-  height: 38,
-  borderRadius: "50%",
-  background: "rgba(139,92,246,0.18)",
-  border: "1px solid rgba(139,92,246,0.3)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-  overflow: "hidden",
-};
-
-const avatarImgStyle: React.CSSProperties = {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-};
-
-const actionsStyle: React.CSSProperties = {
-  marginLeft: "auto",
-  display: "flex",
-  gap: 6,
-};
-
-const confirmBoxStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 10,
-  padding: "10px 14px",
-  borderRadius: 10,
-  background: "rgba(239,68,68,0.08)",
-  border: "1px solid rgba(239,68,68,0.25)",
-  marginBottom: 12,
-};
-
-const postImageStyle: React.CSSProperties = {
-  width: "100%",
-  borderRadius: 12,
-  marginBottom: 12,
-  objectFit: "cover",
-  maxHeight: 400,
-};
-
-const imageControlsStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  marginTop: 8,
-};
-
-const imageInputLabelStyle: React.CSSProperties = {
-  display: "inline-block",
-  padding: "5px 14px",
-  fontSize: 12,
-  borderRadius: 8,
-  border: "1px dashed rgba(139,92,246,0.5)",
-  color: "var(--purple)",
-  cursor: "pointer",
-};
-
-const footerStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 16,
-  paddingTop: 10,
-  borderTop: "1px solid rgba(255,255,255,0.07)",
-};
-
-const likeButtonStyle = (liked: boolean): React.CSSProperties => ({
-  display: "flex",
-  alignItems: "center",
-  gap: 5,
-  fontSize: 13,
-  color: liked ? "var(--purple)" : "var(--muted)",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  padding: 0,
-  transition: "color 0.15s",
-});
-
-const commentButtonStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 5,
-  fontSize: 13,
-  color: "var(--muted)",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  padding: 0,
-};
