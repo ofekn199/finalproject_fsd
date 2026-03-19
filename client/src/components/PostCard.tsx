@@ -26,6 +26,7 @@ interface PostCardProps {
   currentUserId: string | null; // used to show/hide owner actions
   onDelete: (postId: string) => void;
   onUpdate: (updated: Post) => void;
+  onOpenComments: (postId: string) => void; // open comments modal from parent
 }
 
 export default function PostCard({
@@ -34,6 +35,7 @@ export default function PostCard({
   currentUserId,
   onDelete,
   onUpdate,
+  onOpenComments,
 }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
@@ -145,11 +147,16 @@ export default function PostCard({
   // ── Render ────────────────────────────────────────────────────────────
 
   // Resolve the image src to show in edit mode
-  const editImageSrc = imagePreview || (editImage === null ? "" : post.imageUrl ? `${import.meta.env.VITE_API_URL}${post.imageUrl}` : "");
+  const editImageSrc =
+    imagePreview ||
+    (editImage === null
+      ? ""
+      : post.imageUrl
+        ? `${import.meta.env.VITE_API_URL}${post.imageUrl}`
+        : "");
 
   return (
     <div className="card" style={cardStyle}>
-
       {/* Author row */}
       <div style={headerStyle}>
         <div style={avatarStyle}>
@@ -178,14 +185,20 @@ export default function PostCard({
             <button
               className="btn btn-ghost"
               style={{ padding: "4px 12px", fontSize: 12 }}
-              onClick={() => { setIsEditing(true); setError(""); }}
+              onClick={() => {
+                setIsEditing(true);
+                setError("");
+              }}
             >
               Edit
             </button>
             <button
               className="btn btn-danger"
               style={{ padding: "4px 12px", fontSize: 12 }}
-              onClick={() => { setConfirmDelete(true); setError(""); }}
+              onClick={() => {
+                setConfirmDelete(true);
+                setError("");
+              }}
             >
               Delete
             </button>
@@ -220,7 +233,9 @@ export default function PostCard({
 
       {/* Error message */}
       {error && (
-        <div className="alert-error" style={{ margin: "8px 0" }}>{error}</div>
+        <div className="alert-error" style={{ margin: "8px 0" }}>
+          {error}
+        </div>
       )}
 
       {/* Post body — edit mode or display mode */}
@@ -303,18 +318,42 @@ export default function PostCard({
           title={liked ? "Unlike" : "Like"}
         >
           {/* Heart icon — filled when liked */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill={liked ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
           {likesCount}
         </button>
-        <span style={countStyle}>
+
+        <button
+          type="button"
+          onClick={() => onOpenComments(post._id)}
+          style={commentButtonStyle}
+          title="Open comments"
+        >
           {/* Comment icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           {post.commentsCount}
-        </span>
+        </button>
       </div>
     </div>
   );
@@ -403,14 +442,6 @@ const footerStyle: React.CSSProperties = {
   borderTop: "1px solid rgba(255,255,255,0.07)",
 };
 
-const countStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 5,
-  fontSize: 13,
-  color: "var(--muted)",
-};
-
 const likeButtonStyle = (liked: boolean): React.CSSProperties => ({
   display: "flex",
   alignItems: "center",
@@ -423,3 +454,15 @@ const likeButtonStyle = (liked: boolean): React.CSSProperties => ({
   padding: 0,
   transition: "color 0.15s",
 });
+
+const commentButtonStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 5,
+  fontSize: 13,
+  color: "var(--muted)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: 0,
+};
