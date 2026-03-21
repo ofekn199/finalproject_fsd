@@ -5,73 +5,56 @@ interface ChessAnalysisBoardProps {
   bestMove?: string;
 }
 
-function squareToCoords(square: string) {
-  if (square.length !== 2) return null;
-
-  const file = square[0];
-  const rank = square[1];
-
-  const col = file.charCodeAt(0) - "a".charCodeAt(0);
-  const row = 8 - Number(rank);
-
-  if (col < 0 || col > 7 || Number.isNaN(row) || row < 0 || row > 7) {
-    return null;
-  }
-
-  return { row, col };
+interface RuntimeChessboardProps {
+  position: string;
+  arePiecesDraggable?: boolean;
+  boardWidth?: number;
+  customSquareStyles?: Record<string, React.CSSProperties>;
+  showBoardNotation?: boolean;
+  animationDuration?: number;
 }
 
-function getMoveSquares(bestMove?: string) {
+const ChessboardRuntime =
+  Chessboard as unknown as React.ComponentType<RuntimeChessboardProps>;
+
+function getHighlightedSquares(bestMove?: string) {
   if (!bestMove || bestMove.length < 4) {
-    return { from: null, to: null };
+    return {};
   }
 
-  const from = squareToCoords(bestMove.slice(0, 2));
-  const to = squareToCoords(bestMove.slice(2, 4));
+  const from = bestMove.slice(0, 2);
+  const to = bestMove.slice(2, 4);
 
-  return { from, to };
+  return {
+    [from]: {
+      backgroundColor: "rgba(59, 130, 246, 0.35)",
+      boxShadow: "inset 0 0 0 3px rgba(59, 130, 246, 0.95)",
+    },
+    [to]: {
+      backgroundColor: "rgba(34, 197, 94, 0.35)",
+      boxShadow: "inset 0 0 0 3px rgba(34, 197, 94, 0.95)",
+    },
+  };
 }
 
 export default function ChessAnalysisBoard({
   fen,
   bestMove,
 }: ChessAnalysisBoardProps) {
-  const { from, to } = getMoveSquares(bestMove);
+  const customSquareStyles = getHighlightedSquares(bestMove);
 
   return (
     <div style={wrapperStyle}>
-      <div style={boardContainerStyle}>
-        <Chessboard
-          options={{
-            position: fen,
-            arePiecesDraggable: false,
-            boardWidth: 280,
-          }}
+      <div style={boardShellStyle}>
+        <ChessboardRuntime
+          key={`${fen}-${bestMove ?? ""}`}
+          position={fen}
+          arePiecesDraggable={false}
+          boardWidth={320}
+          customSquareStyles={customSquareStyles}
+          showBoardNotation
+          animationDuration={200}
         />
-
-        {from && (
-          <div
-            style={{
-              ...highlightStyle,
-              ...getSquareOverlayStyle(from.row, from.col),
-              background: "rgba(59, 130, 246, 0.35)",
-              border: "2px solid rgba(59, 130, 246, 0.85)",
-            }}
-            title="Best move: from"
-          />
-        )}
-
-        {to && (
-          <div
-            style={{
-              ...highlightStyle,
-              ...getSquareOverlayStyle(to.row, to.col),
-              background: "rgba(34, 197, 94, 0.35)",
-              border: "2px solid rgba(34, 197, 94, 0.85)",
-            }}
-            title="Best move: to"
-          />
-        )}
       </div>
 
       {bestMove && (
@@ -80,7 +63,7 @@ export default function ChessAnalysisBoard({
             <span
               style={{
                 ...legendDotStyle,
-                background: "rgba(59, 130, 246, 0.75)",
+                background: "rgba(59, 130, 246, 0.8)",
               }}
             />
             From
@@ -90,7 +73,7 @@ export default function ChessAnalysisBoard({
             <span
               style={{
                 ...legendDotStyle,
-                background: "rgba(34, 197, 94, 0.75)",
+                background: "rgba(34, 197, 94, 0.8)",
               }}
             />
             To
@@ -101,36 +84,17 @@ export default function ChessAnalysisBoard({
   );
 }
 
-function getSquareOverlayStyle(row: number, col: number): React.CSSProperties {
-  const size = 100 / 8;
-
-  return {
-    top: `${row * size}%`,
-    left: `${col * size}%`,
-    width: `${size}%`,
-    height: `${size}%`,
-  };
-}
-
 const wrapperStyle: React.CSSProperties = {
   width: "100%",
-  maxWidth: 280,
+  maxWidth: 320,
   marginTop: 12,
 };
 
-const boardContainerStyle: React.CSSProperties = {
-  position: "relative",
-  width: 280,
-  height: 280,
-  borderRadius: 12,
+const boardShellStyle: React.CSSProperties = {
+  borderRadius: 16,
   overflow: "hidden",
-};
-
-const highlightStyle: React.CSSProperties = {
-  position: "absolute",
-  boxSizing: "border-box",
-  pointerEvents: "none",
-  zIndex: 5,
+  border: "1px solid rgba(255, 255, 255, 0.12)",
+  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.22)",
 };
 
 const legendStyle: React.CSSProperties = {
