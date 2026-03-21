@@ -10,6 +10,7 @@ import { authRouter } from "./routes/auth.routes";
 import { userRouter } from "./routes/user.routes";
 import { postRouter } from "./routes/post.routes";
 import { commentRouter } from "./routes/comment.routes";
+import { aiRouter } from "./routes/ai.routes";
 
 // Create and configure the Express app
 export function createApp() {
@@ -28,6 +29,7 @@ export function createApp() {
   app.use("/users", userRouter);
   app.use("/posts", postRouter);
   app.use(commentRouter);
+  app.use("/ai", aiRouter);
 
   // Global error handler (should be last middleware)
   app.use(errorMiddleware);
