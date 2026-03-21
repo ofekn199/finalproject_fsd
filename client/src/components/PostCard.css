@@ -239,3 +239,26 @@
   border-color: rgba(168, 85, 247, 0.24);
   background: rgba(168, 85, 247, 0.08);
 }
+
+.post-card__chess-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.post-card__copy-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.post-card__copy-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
