@@ -25,6 +25,57 @@ interface PostCardProps {
   onOpenComments: (postId: string) => void;
 }
 
+const pieceNames: Record<string, string> = {
+  p: "Pawn",
+  r: "Rook",
+  n: "Knight",
+  b: "Bishop",
+  q: "Queen",
+  k: "King",
+  P: "Pawn",
+  R: "Rook",
+  N: "Knight",
+  B: "Bishop",
+  Q: "Queen",
+  K: "King",
+};
+
+function getPieceFromFen(fen: string, square: string): string | null {
+  const boardPart = fen.split(" ")[0];
+  const rows = boardPart.split("/");
+
+  if (square.length !== 2 || rows.length !== 8) return null;
+
+  const file = square[0].charCodeAt(0) - "a".charCodeAt(0);
+  const rank = Number(square[1]);
+
+  if (file < 0 || file > 7 || Number.isNaN(rank) || rank < 1 || rank > 8) {
+    return null;
+  }
+
+  const rowIndex = 8 - rank;
+  const row = rows[rowIndex];
+
+  let col = 0;
+
+  for (const char of row) {
+    const emptyCount = Number(char);
+
+    if (!Number.isNaN(emptyCount)) {
+      col += emptyCount;
+      continue;
+    }
+
+    if (col === file) {
+      return char;
+    }
+
+    col += 1;
+  }
+
+  return null;
+}
+
 export default function PostCard({
   post,
   accessToken,
@@ -67,6 +118,22 @@ export default function PostCard({
   function formatBestMove(move?: string): string {
     if (!move || move.length < 4) return move || "Unknown";
     return `${move.slice(0, 2)} → ${move.slice(2, 4)}`;
+  }
+
+  function formatBestMoveWithPiece(move?: string): string {
+    if (!move || !post.fen || move.length < 4) {
+      return formatBestMove(move);
+    }
+
+    const fromSquare = move.slice(0, 2);
+    const piece = getPieceFromFen(post.fen, fromSquare);
+
+    if (!piece) {
+      return formatBestMove(move);
+    }
+
+    const pieceName = pieceNames[piece] ?? "Piece";
+    return `${pieceName}: ${formatBestMove(move)}`;
   }
 
   const handleSave = async () => {
@@ -463,7 +530,7 @@ export default function PostCard({
           </div>
 
           <div className="post-card__ai-row">
-            <strong>Best Move:</strong> {formatBestMove(chessResult.bestMove)}
+            <strong>Best Move:</strong> {formatBestMoveWithPiece(chessResult.bestMove)}
           </div>
           <div className="post-card__ai-row">
             <strong>Evaluation:</strong> {chessResult.evaluation}
