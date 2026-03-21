@@ -64,6 +64,11 @@ export default function PostCard({
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
+  function formatBestMove(move?: string): string {
+    if (!move || move.length < 4) return move || "Unknown";
+    return `${move.slice(0, 2)} → ${move.slice(2, 4)}`;
+  }
+
   const handleSave = async () => {
     if (!accessToken || !editText.trim()) return;
 
@@ -198,6 +203,17 @@ export default function PostCard({
       }
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleCopyFen = async () => {
+    if (!post.fen) return;
+
+    try {
+      await navigator.clipboard.writeText(post.fen);
+      showToast("FEN copied!", "success");
+    } catch {
+      showToast("Failed to copy FEN", "error");
     }
   };
 
@@ -433,8 +449,21 @@ export default function PostCard({
 
       {chessResult && (
         <div className="post-card__ai-result post-card__chess-result">
+          <div className="post-card__chess-header">
+            <strong>Chess AI Analysis</strong>
+            {post.fen && (
+              <button
+                type="button"
+                className="post-card__copy-btn"
+                onClick={handleCopyFen}
+              >
+                Copy FEN
+              </button>
+            )}
+          </div>
+
           <div className="post-card__ai-row">
-            <strong>Best Move:</strong> {chessResult.bestMove}
+            <strong>Best Move:</strong> {formatBestMove(chessResult.bestMove)}
           </div>
           <div className="post-card__ai-row">
             <strong>Evaluation:</strong> {chessResult.evaluation}
