@@ -6,7 +6,12 @@ import {
   deletePost,
   toggleLike,
 } from "../services/postService";
-import { analyzePost, type AIAnalysis } from "../services/aiService";
+import {
+  analyzePost,
+  analyzeChess,
+  type AIAnalysis,
+  type ChessAnalysis,
+} from "../services/aiService";
 import { useToast } from "../context/ToastContext";
 import "./PostCard.css";
 
@@ -41,10 +46,12 @@ export default function PostCard({
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AIAnalysis | null>(null);
+  const [chessResult, setChessResult] = useState<ChessAnalysis | null>(null);
 
   const { showToast } = useToast();
 
   const isOwner = currentUserId === post.author._id;
+  const hasFen = !!post.fen?.trim();
 
   function timeAgo(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
@@ -67,8 +74,10 @@ export default function PostCard({
         post._id,
         editText.trim(),
         accessToken,
-        editImage
+        editImage,
+        post.fen ?? ""
       );
+
       onUpdate(updated);
       setIsEditing(false);
 
@@ -162,13 +171,27 @@ export default function PostCard({
     setAiLoading(true);
 
     try {
-      const result = await analyzePost(post.text, post.imageUrl);
-      setAiResult(result);
+      if (hasFen && post.fen) {
+        const result = await analyzeChess(post.fen);
+        setChessResult(result);
+        setAiResult(null);
+      } else {
+        const result = await analyzePost(post.text, post.imageUrl);
+        setAiResult(result);
+        setChessResult(null);
+      }
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        showToast(err.response?.data?.message || "Failed to analyze post", "error");
+        showToast(
+          err.response?.data?.message ||
+            (hasFen ? "Failed to analyze chess position" : "Failed to analyze post"),
+          "error"
+        );
       } else {
-        showToast("Failed to analyze post", "error");
+        showToast(
+          hasFen ? "Failed to analyze chess position" : "Failed to analyze post",
+          "error"
+        );
       }
     } finally {
       setAiLoading(false);
@@ -208,6 +231,12 @@ export default function PostCard({
           <div className="post-card__username">{post.author.username}</div>
           <div className="post-card__time">{timeAgo(post.createdAt)}</div>
         </div>
+
+        {hasFen && !isEditing && (
+          <div className="post-card__fen-badge">
+            ♟ Chess
+          </div>
+        )}
 
         {isOwner && !isEditing && !confirmDelete && (
           <div className="post-card__actions">
@@ -384,10 +413,10 @@ export default function PostCard({
           onClick={handleAnalyze}
           disabled={aiLoading}
           className="post-card__icon-btn post-card__ai-btn"
-          title="Analyze with AI"
+          title={hasFen ? "Analyze chess position" : "Analyze with AI"}
         >
-          <span>🤖</span>
-          {aiLoading ? "Analyzing..." : "Analyze"}
+          <span>{hasFen ? "♟" : "🤖"}</span>
+          {aiLoading ? "Analyzing..." : hasFen ? "Analyze Chess" : "Analyze"}
         </button>
       </div>
 
@@ -401,6 +430,21 @@ export default function PostCard({
           </div>
           <div className="post-card__ai-row">
             <strong>Suggestion:</strong> {aiResult.suggestion}
+          </div>
+        </div>
+      )}
+
+      {chessResult && (
+        <div className="post-card__ai-result post-card__chess-result">
+          <div className="post-card__ai-row">
+            <strong>Best Move:</strong> {chessResult.bestMove}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Evaluation:</strong> {chessResult.evaluation}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Principal Line:</strong>{" "}
+            {chessResult.line.length > 0 ? chessResult.line.join(" → ") : "No line available"}
           </div>
         </div>
       )}

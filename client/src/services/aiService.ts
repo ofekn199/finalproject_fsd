@@ -6,6 +6,12 @@ export interface AIAnalysis {
   suggestion: string;
 }
 
+export interface ChessAnalysis {
+  bestMove: string;
+  evaluation: string;
+  line: string[];
+}
+
 export const analyzePost = async (
   text: string,
   imageUrl?: string
@@ -13,6 +19,16 @@ export const analyzePost = async (
   const res = await api.post("/ai/analyze-post", {
     text,
     imageUrl,
+  });
+
+  return res.data;
+};
+
+export const analyzeChess = async (
+  fen: string
+): Promise<ChessAnalysis> => {
+  const res = await api.post("/ai/analyze-chess", {
+    fen,
   });
 
   return res.data;

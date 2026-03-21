@@ -6,6 +6,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
  * author: Reference to the User who created the post.
  * text: Main textual content of the post.
  * imageUrl: Optional image associated with the post.
+ * fen: Optional chess FEN string for chess-related posts.
  *
  * likesCount & commentsCount:
  * Stored as counters for performance reasons (avoids loading full arrays).
@@ -17,6 +18,7 @@ export interface IPost extends Document {
   author: Types.ObjectId;
   text: string;
   imageUrl?: string;
+  fen?: string;
   likesCount: number;
   commentsCount: number;
   createdAt: Date;
@@ -34,7 +36,7 @@ const postSchema = new Schema<IPost>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true, // improves queries filtering by user
+      index: true,
     },
 
     /**
@@ -56,7 +58,19 @@ const postSchema = new Schema<IPost>(
      */
     imageUrl: {
       type: String,
-      default: "", // ensures consistency (never undefined)
+      default: "",
+    },
+
+    /**
+     * fen:
+     * Optional chess board position in Forsyth-Edwards Notation.
+     * Example:
+     * "8/7b/P1k5/3N4/8/8/5PKp/8 w - - 0 1"
+     */
+    fen: {
+      type: String,
+      trim: true,
+      default: "",
     },
 
     /**
@@ -78,7 +92,7 @@ const postSchema = new Schema<IPost>(
     },
   },
   {
-    timestamps: true, // adds createdAt & updatedAt automatically
+    timestamps: true,
   }
 );
 
