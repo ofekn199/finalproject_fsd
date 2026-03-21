@@ -12,6 +12,7 @@ import {
   type AIAnalysis,
   type ChessAnalysis,
 } from "../services/aiService";
+import ChessAnalysisBoard from "./ChessAnalysisBoard";
 import { useToast } from "../context/ToastContext";
 import "./PostCard.css";
 
@@ -421,17 +422,22 @@ export default function PostCard({
       </div>
 
       {aiResult && (
-        <div className="post-card__ai-result">
-          <div className="post-card__ai-row">
-            <strong>Summary:</strong> {aiResult.summary}
-          </div>
-          <div className="post-card__ai-row">
-            <strong>Insight:</strong> {aiResult.insight}
-          </div>
-          <div className="post-card__ai-row">
-            <strong>Suggestion:</strong> {aiResult.suggestion}
-          </div>
-        </div>
+  <div className="post-card__ai-result">
+    <div className="post-card__ai-row">
+      <strong>Summary:</strong> {aiResult.summary}
+    </div>
+    <div className="post-card__ai-row">
+      <strong>Insight:</strong> {aiResult.insight}
+    </div>
+    <div className="post-card__ai-row">
+      <strong>Suggestion:</strong> {aiResult.suggestion}
+    </div>
+
+    {/* 🧠 Chess Board */}
+    {post.fen && (
+      <ChessAnalysisBoard fen={post.fen} />
+    )}
+  </div>
       )}
 
       {chessResult && (
