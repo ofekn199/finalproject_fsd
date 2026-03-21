@@ -34,6 +34,8 @@ export const userRouter = Router();
  *     responses:
  *       200:
  *         description: User profile returned
+ *       400:
+ *         description: Invalid user ID
  *       404:
  *         description: User not found
  */
@@ -43,7 +45,7 @@ userRouter.get("/:id", getProfile);
  * @openapi
  * /users/me:
  *   put:
- *     summary: Update current user's bio
+ *     summary: Update current user's profile
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -119,6 +121,18 @@ userRouter.post(
  *         schema:
  *           type: string
  *         description: User ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of posts per page
  *     responses:
  *       200:
  *         description: Array of posts by the user (newest first)

@@ -28,6 +28,21 @@ export const aiRouter = Router();
  *     responses:
  *       200:
  *         description: AI analysis result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: string
+ *                 insight:
+ *                   type: string
+ *                 suggestion:
+ *                   type: string
+ *       400:
+ *         description: Invalid request body
+ *       500:
+ *         description: AI analysis failed
  */
 aiRouter.post("/analyze-post", analyzePost);
 
@@ -52,5 +67,22 @@ aiRouter.post("/analyze-post", analyzePost);
  *     responses:
  *       200:
  *         description: Chess analysis result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bestMove:
+ *                   type: string
+ *                 evaluation:
+ *                   type: string
+ *                 line:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Invalid FEN or request body
+ *       500:
+ *         description: Chess engine failed
  */
 aiRouter.post("/analyze-chess", analyzeChess);

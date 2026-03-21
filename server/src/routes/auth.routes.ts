@@ -32,6 +32,10 @@ export const authRouter = Router();
  *     responses:
  *       201:
  *         description: User created
+ *       400:
+ *         description: Validation failed
+ *       409:
+ *         description: Username or email already exists
  */
 authRouter.post("/register", validate(registerSchema), register);
 
@@ -58,6 +62,10 @@ authRouter.post("/register", validate(registerSchema), register);
  *     responses:
  *       200:
  *         description: Tokens returned
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Invalid credentials
  */
 authRouter.post("/login", validate(loginSchema), login);
 
@@ -81,6 +89,10 @@ authRouter.post("/login", validate(loginSchema), login);
  *     responses:
  *       200:
  *         description: New tokens returned
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Invalid refresh token
  */
 authRouter.post("/refresh", validate(refreshSchema), refresh);
 
@@ -95,6 +107,8 @@ authRouter.post("/refresh", validate(refreshSchema), refresh);
  *     responses:
  *       200:
  *         description: Logged out
+ *       401:
+ *         description: Unauthorized
  */
 authRouter.post("/logout", authMiddleware, logout);
 
@@ -118,5 +132,9 @@ authRouter.post("/logout", authMiddleware, logout);
  *     responses:
  *       200:
  *         description: Tokens returned
+ *       400:
+ *         description: Validation failed or invalid Google credential
+ *       401:
+ *         description: Google authentication failed
  */
 authRouter.post("/google", validate(googleLoginSchema), googleLogin);
