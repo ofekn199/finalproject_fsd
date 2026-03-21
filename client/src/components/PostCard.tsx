@@ -76,6 +76,48 @@ function getPieceFromFen(fen: string, square: string): string | null {
   return null;
 }
 
+function getEvaluationBadge(evaluation: string) {
+  const value = evaluation.toLowerCase();
+
+  if (value.includes("mate for")) {
+    return {
+      label: "Mate",
+      className: "post-card__eval-badge post-card__eval-badge--mate",
+    };
+  }
+
+  if (value.includes("equal")) {
+    return {
+      label: "Equal",
+      className: "post-card__eval-badge post-card__eval-badge--equal",
+    };
+  }
+
+  const cpMatch = evaluation.match(/\((-?\d+(\.\d+)?)\)/);
+  const numericScore = cpMatch ? Math.abs(Number(cpMatch[1])) : null;
+
+  if (numericScore !== null) {
+    if (numericScore >= 3) {
+      return {
+        label: "Winning",
+        className: "post-card__eval-badge post-card__eval-badge--winning",
+      };
+    }
+
+    if (numericScore >= 1) {
+      return {
+        label: "Advantage",
+        className: "post-card__eval-badge post-card__eval-badge--advantage",
+      };
+    }
+  }
+
+  return {
+    label: "Position",
+    className: "post-card__eval-badge post-card__eval-badge--default",
+  };
+}
+
 export default function PostCard({
   post,
   accessToken,
@@ -295,6 +337,10 @@ export default function PostCard({
   const displayImageSrc = post.imageUrl
     ? `${import.meta.env.VITE_API_URL}${post.imageUrl}`
     : "";
+
+  const evaluationBadge = chessResult
+    ? getEvaluationBadge(chessResult.evaluation)
+    : null;
 
   return (
     <div className="card post-card">
@@ -532,9 +578,16 @@ export default function PostCard({
           <div className="post-card__ai-row">
             <strong>Best Move:</strong> {formatBestMoveWithPiece(chessResult.bestMove)}
           </div>
-          <div className="post-card__ai-row">
+
+          <div className="post-card__ai-row post-card__eval-row">
             <strong>Evaluation:</strong> {chessResult.evaluation}
+            {evaluationBadge && (
+              <span className={evaluationBadge.className}>
+                {evaluationBadge.label}
+              </span>
+            )}
           </div>
+
           <div className="post-card__ai-row">
             <strong>Principal Line:</strong>{" "}
             {chessResult.line.length > 0
