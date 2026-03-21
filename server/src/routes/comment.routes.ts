@@ -24,9 +24,14 @@ export const commentRouter = Router();
  *         required: true
  *         schema:
  *           type: string
+ *         description: Post ID
  *     responses:
  *       200:
  *         description: Comments list
+ *       400:
+ *         description: Invalid post ID
+ *       404:
+ *         description: Post not found
  */
 commentRouter.get(
   "/posts/:id/comments",
@@ -48,6 +53,7 @@ commentRouter.get(
  *         required: true
  *         schema:
  *           type: string
+ *         description: Post ID
  *     requestBody:
  *       required: true
  *       content:
@@ -62,6 +68,12 @@ commentRouter.get(
  *     responses:
  *       201:
  *         description: Comment created
+ *       400:
+ *         description: Validation failed or invalid post ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
  */
 commentRouter.post(
   "/posts/:id/comments",

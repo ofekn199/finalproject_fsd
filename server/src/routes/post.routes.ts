@@ -30,6 +30,10 @@ export const postRouter = Router();
  *               image:
  *                 type: string
  *                 format: binary
+ *               fen:
+ *                 type: string
+ *                 description: Optional chess FEN string for chess-related posts
+ *                 example: r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 2 3
  *     responses:
  *       201:
  *         description: Post created
@@ -68,19 +72,44 @@ postRouter.get("/", optionalAuthMiddleware, validate(getPostsSchema), getFeed);
 /**
  * @openapi
  * /posts/{id}:
- *   get:
- *     summary: Get a single post by ID
+ *   put:
+ *     summary: Edit a post (owner only)
  *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [text]
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 maxLength: 500
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               removeImage:
+ *                 type: string
+ *                 enum: ["true"]
+ *               fen:
+ *                 type: string
+ *                 description: Optional chess FEN string for chess-related posts
+ *                 example: r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 2 3
  *     responses:
  *       200:
- *         description: Post returned
- *       400:
- *         description: Invalid ID format
+ *         description: Updated post
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not the post owner
  *       404:
  *         description: Post not found
  */
@@ -156,5 +185,30 @@ postRouter.put("/:id", authMiddleware, upload.single("image"), validate(updatePo
 // auth required — service enforces that only the author can delete
 postRouter.delete("/:id", authMiddleware, validate(postIdSchema), deletePost);
 
+/**
+ * @openapi
+ * /posts/{id}/like:
+ *   post:
+ *     summary: Toggle like on a post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Like toggled successfully
+ *       400:
+ *         description: Invalid post ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
 // POST /posts/:id/like — toggles like on/off for the authenticated user
 postRouter.post("/:id/like", authMiddleware, toggleLike);
