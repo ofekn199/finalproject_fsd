@@ -185,7 +185,9 @@ export default function PostCard({
       if (axios.isAxiosError(err)) {
         showToast(
           err.response?.data?.message ||
-            (hasFen ? "Failed to analyze chess position" : "Failed to analyze post"),
+            (hasFen
+              ? "Failed to analyze chess position"
+              : "Failed to analyze post"),
           "error"
         );
       } else {
@@ -233,11 +235,7 @@ export default function PostCard({
           <div className="post-card__time">{timeAgo(post.createdAt)}</div>
         </div>
 
-        {hasFen && !isEditing && (
-          <div className="post-card__fen-badge">
-            ♟ Chess
-          </div>
-        )}
+        {hasFen && !isEditing && <div className="post-card__fen-badge">♟ Chess</div>}
 
         {isOwner && !isEditing && !confirmDelete && (
           <div className="post-card__actions">
@@ -357,11 +355,7 @@ export default function PostCard({
 
       {!isEditing && post.imageUrl && (
         <div className="post-card__image-wrapper">
-          <img
-            src={displayImageSrc}
-            alt="Post"
-            className="post-card__image"
-          />
+          <img src={displayImageSrc} alt="Post" className="post-card__image" />
         </div>
       )}
 
@@ -370,7 +364,9 @@ export default function PostCard({
           type="button"
           onClick={handleLike}
           disabled={!accessToken || liking}
-          className={`post-card__icon-btn ${liked ? "post-card__icon-btn--liked" : ""}`}
+          className={`post-card__icon-btn ${
+            liked ? "post-card__icon-btn--liked" : ""
+          }`}
           title={liked ? "Unlike" : "Like"}
         >
           <svg
@@ -422,22 +418,17 @@ export default function PostCard({
       </div>
 
       {aiResult && (
-  <div className="post-card__ai-result">
-    <div className="post-card__ai-row">
-      <strong>Summary:</strong> {aiResult.summary}
-    </div>
-    <div className="post-card__ai-row">
-      <strong>Insight:</strong> {aiResult.insight}
-    </div>
-    <div className="post-card__ai-row">
-      <strong>Suggestion:</strong> {aiResult.suggestion}
-    </div>
-
-    {/* 🧠 Chess Board */}
-    {post.fen && (
-      <ChessAnalysisBoard fen={post.fen} />
-    )}
-  </div>
+        <div className="post-card__ai-result">
+          <div className="post-card__ai-row">
+            <strong>Summary:</strong> {aiResult.summary}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Insight:</strong> {aiResult.insight}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Suggestion:</strong> {aiResult.suggestion}
+          </div>
+        </div>
       )}
 
       {chessResult && (
@@ -450,8 +441,17 @@ export default function PostCard({
           </div>
           <div className="post-card__ai-row">
             <strong>Principal Line:</strong>{" "}
-            {chessResult.line.length > 0 ? chessResult.line.join(" → ") : "No line available"}
+            {chessResult.line.length > 0
+              ? chessResult.line.join(" → ")
+              : "No line available"}
           </div>
+
+          {post.fen && (
+            <ChessAnalysisBoard
+              fen={post.fen}
+              bestMove={chessResult.bestMove}
+            />
+          )}
         </div>
       )}
     </div>
