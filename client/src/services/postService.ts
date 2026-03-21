@@ -4,7 +4,7 @@ import { api } from "../api/axios";
  * Post service — API calls for post CRUD and feed.
  * getAllPosts — public, supports optional userId filter for profile pages
  * getPostById — public, returns a single post by id
- * createPost  — auth required, supports optional image upload
+ * createPost  — auth required, supports optional image upload and optional FEN
  * updatePost  — auth required, owner only
  * deletePost  — auth required, owner only
  */
@@ -13,6 +13,7 @@ export interface Post {
   _id: string;
   text: string;
   imageUrl?: string;
+  fen?: string;
   author: {
     _id: string;
     username: string;
@@ -58,15 +59,23 @@ export const getPostById = async (postId: string): Promise<Post> => {
   return res.data;
 };
 
-// POST /posts — creates a new post, image is optional
+// POST /posts — creates a new post, image and fen are optional
 export const createPost = async (
   text: string,
   accessToken: string,
-  image?: File
+  image?: File,
+  fen?: string
 ): Promise<Post> => {
   const form = new FormData();
   form.append("text", text);
-  if (image) form.append("image", image);
+
+  if (image) {
+    form.append("image", image);
+  }
+
+  if (fen !== undefined) {
+    form.append("fen", fen);
+  }
 
   const res = await api.post("/posts", form, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -75,13 +84,15 @@ export const createPost = async (
   return res.data;
 };
 
-// PUT /posts/:id — updates the post text and/or image, only the owner can call this
+// PUT /posts/:id — updates the post text and/or image and/or fen, only the owner can call this
 // image: File = replace image, null = remove image, undefined = keep existing
+// fen: string = set/update fen, "" = clear fen, undefined = keep existing
 export const updatePost = async (
   id: string,
   text: string,
   accessToken: string,
-  image?: File | null
+  image?: File | null,
+  fen?: string
 ): Promise<Post> => {
   const form = new FormData();
   form.append("text", text);
@@ -90,6 +101,10 @@ export const updatePost = async (
     form.append("removeImage", "true");
   } else if (image instanceof File) {
     form.append("image", image);
+  }
+
+  if (fen !== undefined) {
+    form.append("fen", fen);
   }
 
   const res = await api.put(`/posts/${id}`, form, {

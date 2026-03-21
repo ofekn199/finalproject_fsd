@@ -6,14 +6,6 @@
  * - body
  * - query
  * - params
- *
- * Current phase:
- * - createPostSchema → POST /posts
- * - getPostsSchema   → GET /posts
- *
- * Future phase:
- * - updatePostSchema → PUT /posts/:id
- * - postIdSchema     → GET /posts/:id, DELETE /posts/:id
  */
 
 import { z } from "zod";
@@ -22,7 +14,7 @@ import { z } from "zod";
  * POST /posts
  * A post must include text content.
  * imageUrl is optional for now.
- * Later, when using multer, the uploaded file will be handled separately.
+ * fen is optional and is used for chess-related posts.
  */
 export const createPostSchema = z.object({
   body: z.object({
@@ -32,6 +24,12 @@ export const createPostSchema = z.object({
       .min(1, "Text cannot be empty")
       .max(500, "Text cannot exceed 500 characters"),
     imageUrl: z.string().optional(),
+    fen: z
+      .string()
+      .trim()
+      .max(200, "FEN cannot exceed 200 characters")
+      .optional()
+      .or(z.literal("")),
   }),
 });
 
@@ -48,8 +46,8 @@ export const getPostsSchema = z.object({
 });
 
 /**
- * FUTURE: PUT /posts/:id
- * Keep this schema for the next phase when edit post is implemented.
+ * PUT /posts/:id
+ * Supports text update, optional image removal/replacement, and optional FEN.
  */
 export const updatePostSchema = z.object({
   body: z.object({
@@ -59,6 +57,12 @@ export const updatePostSchema = z.object({
       .min(1, "Text cannot be empty")
       .max(500, "Text cannot exceed 500 characters"),
     removeImage: z.literal("true").optional(),
+    fen: z
+      .string()
+      .trim()
+      .max(200, "FEN cannot exceed 200 characters")
+      .optional()
+      .or(z.literal("")),
   }),
   params: z.object({
     id: z.string().min(1, "Post id is required"),
@@ -66,7 +70,7 @@ export const updatePostSchema = z.object({
 });
 
 /**
- * FUTURE: GET /posts/:id or DELETE /posts/:id
+ * GET /posts/:id or DELETE /posts/:id
  */
 export const postIdSchema = z.object({
   params: z.object({

@@ -8,52 +8,84 @@ import { useToast } from "../context/ToastContext";
  *
  * - Textarea for post text (max 500 chars) with live character counter
  * - Optional image picker with preview thumbnail
+ * - Optional chess FEN input for chess-related posts
  * - On submit: calls createPost → notifies parent via onCreated()
  * - On success: clears the form automatically
  */
 
 interface CreatePostFormProps {
   accessToken: string;
-  onCreated: (post: Post) => void; // parent prepends the new post to its list
+  onCreated: (post: Post) => void;
 }
 
-export default function CreatePostForm({ accessToken, onCreated }: CreatePostFormProps) {
+export default function CreatePostForm({
+  accessToken,
+  onCreated,
+}: CreatePostFormProps) {
   const [text, setText] = useState("");
+  const [fen, setFen] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { showToast } = useToast();
 
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When the user picks a file: store it and generate a local preview URL
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
     setImage(file);
     setPreview(file ? URL.createObjectURL(file) : null);
   };
 
   const handleRemoveImage = () => {
-    if (preview) URL.revokeObjectURL(preview);
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
     setImage(null);
     setPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
+
     setLoading(true);
     setError("");
+
     try {
-      const post = await createPost(text.trim(), accessToken, image ?? undefined);
+      const post = await createPost(
+        text.trim(),
+        accessToken,
+        image ?? undefined,
+        fen.trim()
+      );
+
       onCreated(post);
-      // Clear the form after successful submit
-      if (preview) URL.revokeObjectURL(preview);
+
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+
       setText("");
+      setFen("");
       setImage(null);
       setPreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       showToast("Post created!", "success");
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -82,11 +114,23 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
       />
       <div style={charCountStyle}>{text.length} / 500</div>
 
+      {/* Optional FEN input for chess posts */}
+      <input
+        className="input"
+        style={fenInputStyle}
+        type="text"
+        placeholder="Paste chess FEN (optional)"
+        value={fen}
+        onChange={(e) => setFen(e.target.value)}
+        disabled={loading}
+      />
+
       {/* Image preview */}
       {preview && (
         <div style={previewWrapStyle}>
           <img src={preview} alt="Preview" style={previewImgStyle} />
           <button
+            type="button"
             className="btn btn-danger"
             style={removeImgBtnStyle}
             onClick={handleRemoveImage}
@@ -98,19 +142,32 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
       )}
 
       {/* Error */}
-      {error && <div className="alert-error" style={{ marginBottom: 10 }}>{error}</div>}
+      {error && (
+        <div className="alert-error" style={{ marginBottom: 10 }}>
+          {error}
+        </div>
+      )}
 
       {/* Bottom row: attach image + submit */}
       <div style={bottomRowStyle}>
         <button
+          type="button"
           className="btn btn-ghost"
           style={{ fontSize: 13 }}
           onClick={() => fileInputRef.current?.click()}
           disabled={loading}
         >
-          {/* Paperclip icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
           </svg>
           {image ? image.name : "Attach image"}
         </button>
@@ -124,6 +181,7 @@ export default function CreatePostForm({ accessToken, onCreated }: CreatePostFor
         />
 
         <button
+          type="button"
           className="btn btn-primary"
           style={{ minWidth: 100, padding: "8px 20px" }}
           onClick={handleSubmit}
@@ -163,6 +221,10 @@ const charCountStyle: React.CSSProperties = {
   color: "var(--muted)",
   textAlign: "right",
   marginBottom: 10,
+};
+
+const fenInputStyle: React.CSSProperties = {
+  marginBottom: 12,
 };
 
 const previewWrapStyle: React.CSSProperties = {

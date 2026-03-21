@@ -223,3 +223,19 @@
 .post-card__ai-row + .post-card__ai-row {
   margin-top: 8px;
 }
+
+.post-card__fen-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.24);
+  color: #c084fc;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.post-card__chess-result {
+  border-color: rgba(168, 85, 247, 0.24);
+  background: rgba(168, 85, 247, 0.08);
+}
