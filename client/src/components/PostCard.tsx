@@ -6,6 +6,7 @@ import {
   deletePost,
   toggleLike,
 } from "../services/postService";
+import { analyzePost, type AIAnalysis } from "../services/aiService";
 import { useToast } from "../context/ToastContext";
 import "./PostCard.css";
 
@@ -37,6 +38,9 @@ export default function PostCard({
   const [liked, setLiked] = useState(post.isLikedByUser ?? false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [liking, setLiking] = useState(false);
+
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AIAnalysis | null>(null);
 
   const { showToast } = useToast();
 
@@ -146,9 +150,28 @@ export default function PostCard({
       setLiked(result.liked);
       setLikesCount(result.likesCount);
     } catch {
-      // Non-critical — ignore silently
+      // Ignore like toggle errors silently
     } finally {
       setLiking(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (aiLoading) return;
+
+    setAiLoading(true);
+
+    try {
+      const result = await analyzePost(post.text, post.imageUrl);
+      setAiResult(result);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        showToast(err.response?.data?.message || "Failed to analyze post", "error");
+      } else {
+        showToast("Failed to analyze post", "error");
+      }
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -355,7 +378,32 @@ export default function PostCard({
           </svg>
           {post.commentsCount}
         </button>
+
+        <button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={aiLoading}
+          className="post-card__icon-btn post-card__ai-btn"
+          title="Analyze with AI"
+        >
+          <span>🤖</span>
+          {aiLoading ? "Analyzing..." : "Analyze"}
+        </button>
       </div>
+
+      {aiResult && (
+        <div className="post-card__ai-result">
+          <div className="post-card__ai-row">
+            <strong>Summary:</strong> {aiResult.summary}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Insight:</strong> {aiResult.insight}
+          </div>
+          <div className="post-card__ai-row">
+            <strong>Suggestion:</strong> {aiResult.suggestion}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
