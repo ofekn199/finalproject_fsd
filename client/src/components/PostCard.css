@@ -205,3 +205,21 @@
     flex-direction: column;
   }
 }
+
+.post-card__ai-btn {
+  color: var(--cyan);
+}
+
+.post-card__ai-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.post-card__ai-row + .post-card__ai-row {
+  margin-top: 8px;
+}
