@@ -10,14 +10,19 @@ import * as postService from "../services/post.service";
  */
 
 // POST /posts — creates a new post, image upload is optional (handled by multer)
-export async function createPost(req: AuthRequest, res: Response, next: NextFunction) {
+export async function createPost(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    const { text } = req.body;
+    const { text, fen } = req.body;
     const authorId = req.user!.id;
+
     // req.file is set by multer if the user attached an image
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
 
-    const post = await postService.createPost(authorId, text, imageUrl);
+    const post = await postService.createPost(authorId, text, imageUrl, fen);
     res.status(201).json(post);
   } catch (err) {
     next(err);
@@ -26,7 +31,11 @@ export async function createPost(req: AuthRequest, res: Response, next: NextFunc
 
 // GET /posts — returns paginated posts, newest first
 // Optional query params: page (default 1), limit (default 10), userId (filter by author)
-export async function getFeed(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getFeed(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
@@ -44,7 +53,11 @@ export async function getFeed(req: AuthRequest, res: Response, next: NextFunctio
 }
 
 // GET /posts/:id — returns a single post by its MongoDB ID
-export async function getPostById(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getPostById(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const id = req.params.id as string;
 
@@ -54,7 +67,9 @@ export async function getPostById(req: AuthRequest, res: Response, next: NextFun
     }
 
     const post = await postService.getPostById(id, req.user?.id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
 
     res.json(post);
   } catch (err) {
@@ -62,9 +77,13 @@ export async function getPostById(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
-// PUT /posts/:id — updates the post text and/or image, only the owner can do this
+// PUT /posts/:id — updates the post text and/or image and/or FEN, only the owner can do this
 // The service throws 403 if req.user is not the post author
-export async function updatePost(req: AuthRequest, res: Response, next: NextFunction) {
+export async function updatePost(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const id = req.params.id as string;
 
@@ -72,7 +91,7 @@ export async function updatePost(req: AuthRequest, res: Response, next: NextFunc
       return res.status(400).json({ message: "Invalid post ID" });
     }
 
-    const { text, removeImage } = req.body;
+    const { text, removeImage, fen } = req.body;
 
     // Determine image change intent:
     //   new file uploaded → replace
@@ -84,7 +103,14 @@ export async function updatePost(req: AuthRequest, res: Response, next: NextFunc
         ? null
         : undefined;
 
-    const updated = await postService.updatePost(id, req.user!.id, text, imageUrl);
+    const updated = await postService.updatePost(
+      id,
+      req.user!.id,
+      text,
+      imageUrl,
+      fen
+    );
+
     res.json(updated);
   } catch (err) {
     next(err);
@@ -93,7 +119,11 @@ export async function updatePost(req: AuthRequest, res: Response, next: NextFunc
 
 // DELETE /posts/:id — deletes the post and its image file, only the owner can do this
 // The service throws 403 if req.user is not the post author
-export async function deletePost(req: AuthRequest, res: Response, next: NextFunction) {
+export async function deletePost(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const id = req.params.id as string;
 
@@ -111,7 +141,11 @@ export async function deletePost(req: AuthRequest, res: Response, next: NextFunc
 // GET /users/:id/posts — returns paginated posts by a specific user (profile page)
 // Accepts optional ?page and ?limit query params (same defaults/caps as GET /posts)
 // Returns { items, page, limit, hasMore } — consistent shape with GET /posts
-export async function getPostsByUser(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getPostsByUser(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const id = req.params.id as string;
 
