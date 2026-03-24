@@ -1,305 +1,164 @@
+# ArenaX 🚀
 
-# ArenaX – E‑Sports Tournament Platform
+## 📌 Overview
+ArenaX is a Full Stack web application for managing posts and analyzing chess positions using AI.
 
-ArenaX is a full‑stack web platform for managing online gaming tournaments.  
-The system allows users to register, authenticate, and participate in competitive tournaments.
-
-This project is developed as a **Final Project for the Full Stack Development course**.
+The system allows users to:
+- Sign in with Google OAuth
+- Create and interact with posts
+- Analyze chess positions using Stockfish engine
 
 ---
 
-# Architecture
+## 🏗️ Architecture
 
-ArenaX follows a modern full‑stack architecture with a clear separation between backend and frontend services.
+Client (React)  
+↓  
+nginx (Static + Reverse Proxy)  
+↓  
+Backend (Node.js / Express)  
+↓  
+MongoDB + Stockfish  
 
-## Backend
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React
+- Vite
+- Axios
+- React Router
+
+### Backend
 - Node.js
 - Express
 - TypeScript
-- MongoDB
-- Mongoose
 - JWT Authentication
-- Swagger API Documentation
-- Jest Testing
+- Google OAuth
 
-## Frontend
-- React
-- Vite
-- TypeScript
-- React Router
-- Context API for Authentication
+### Database
+- MongoDB (Mongoose)
 
----
+### DevOps
+- Linux Server
+- nginx (reverse proxy)
+- PM2 (process manager)
+- HTTPS (self-signed)
 
-# Project Structure
-
-```
-finalproject_fsd
-│
-├── server
-│   ├── src
-│   │   ├── config
-│   │   ├── controllers
-│   │   ├── docs
-│   │   ├── middlewares
-│   │   ├── models
-│   │   ├── routes
-│   │   ├── services
-│   │   ├── utils
-│   │   ├── app.ts
-│   │   └── server.ts
-│   │
-│   └── tests
-│
-├── client
-│   ├── src
-│   │   ├── api
-│   │   ├── components
-│   │   ├── context
-│   │   ├── pages
-│   │   ├── services
-│   │   └── main.tsx
-│
-└── README.md
-```
+### AI
+- Stockfish (Chess Engine)
+- child_process (Node.js)
 
 ---
 
-# Implemented Features (Phase 1)
+## ⚙️ Installation (Local)
 
-## Authentication System
-
-The project includes a complete authentication system:
-
-- User Registration
-- User Login
-- JWT Access Tokens
-- Refresh Token Mechanism
-- Logout
-- Google OAuth Login
-- Persistent Authentication (localStorage)
-- Protected Routes
-
----
-
-# Google OAuth Authentication
-
-Users can sign in using their Google account.
-
-Implementation includes:
-
-- Google OAuth Client
-- Google Identity Services
-- Backend verification using Google Auth Library
-- Automatic user creation when signing in with Google for the first time
-
----
-
-# API Documentation
-
-Swagger documentation is available at:
-
-```
-http://localhost:3000/api-docs
-```
-
-Endpoints include:
-
-- Register
-- Login
-- Refresh Token
-- Logout
-- Google Login
-
----
-
-# Running the Project Locally
-
-## Prerequisites
-
-Make sure the following are installed:
-
-- Node.js (v18 or higher recommended)
-- npm
-- MongoDB
-- Git
-
----
-
-# 1. Clone the Repository
-
-```
-git clone <repository-url>
+### 1. Clone the repository
+```bash
+git clone https://github.com/ofekn199/finalproject_fsd.git
 cd finalproject_fsd
 ```
 
----
-
-# 2. Install Dependencies
-
-## Backend
-
-```
+### 2. Backend setup
+```bash
 cd server
 npm install
 ```
 
-## Frontend
-
-```
-cd client
-npm install
-```
-
----
-
-# 3. Configure Environment Variables
-
-## Backend
-
-Create:
-
-```
-server/.env
-```
-
-Add:
-
-```
+Create `.env` file:
+```env
 PORT=3000
 MONGO_URI=mongodb://localhost:27017/finalproject_fsd
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-GOOGLE_CLIENT_ID=your_google_client_id
+JWT_ACCESS_SECRET=your_secret
+JWT_REFRESH_SECRET=your_secret
+OPENAI_API_KEY=your_key
 ```
 
----
-
-## Frontend
-
-Create:
-
-```
-client/.env
-```
-
-Add:
-
-```
-VITE_API_URL=http://localhost:3000
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
-```
-
----
-
-# 4. Start MongoDB
-
-Make sure MongoDB is running locally.
-
-Example:
-
-```
-mongod
-```
-
----
-
-# 5. Run the Backend Server
-
-```
-cd server
+Run server:
+```bash
 npm run dev
 ```
 
-Server runs on:
-
-```
-http://localhost:3000
-```
-
 ---
 
-# 6. Run the Frontend
-
-```
-cd client
+### 3. Frontend setup
+```bash
+cd ../client
+npm install
 npm run dev
 ```
 
-Frontend runs on:
+---
 
+## 🚀 Production Deployment
+
+### Backend
+```bash
+npm run build
+pm2 start npm --name arenax-server -- start
 ```
-http://localhost:5173
+
+### Frontend
+```bash
+npm run build
 ```
+
+### nginx
+- Serves frontend
+- Proxies API requests to backend
+- Handles HTTPS
 
 ---
 
-# Testing
-
-Run backend tests:
-
-```
-cd server
-npm test
-```
-
-Run test coverage:
-
-```
-npm run test:coverage
-```
+## 🔐 Authentication
+- Google OAuth integration
+- JWT tokens for session handling
 
 ---
 
-# Git Workflow
+## 🤖 Chess AI (Stockfish)
 
-Development follows a feature‑branch workflow.
+The system analyzes chess positions using FEN.
 
-Example branches:
-
-```
-main
-dev
-ofek/client-auth-flow
-ofek/google-auth
-```
-
-All development is merged into **dev** before being merged into **main**.
+Flow:
+1. Client sends FEN
+2. Server runs Stockfish
+3. Returns:
+   - best move
+   - evaluation
+   - move line
 
 ---
 
-# Current Status
+## 📡 API Endpoints (Examples)
 
-Phase 1 of the project is completed.
-
-The system currently includes:
-
-- Full Backend API
-- Authentication System
-- Google OAuth Integration
-- Frontend Authentication Flow
-- Swagger API Documentation
-- Automated Backend Tests
+- `POST /api/auth/google`
+- `GET /api/posts`
+- `POST /api/posts`
+- `POST /api/chess/analyze`
 
 ---
 
-# Next Development Phase
-
-The next phase will focus on the **Tournament Management System**, which is the core feature of ArenaX.
-
-Planned features:
-
-- Create tournaments
-- Join tournaments
-- Player management
-- Tournament status management
-- Tournament brackets
+## ⚠️ Known Issues
+- Stockfish requires installation on server
+- Self-signed HTTPS may show browser warnings
 
 ---
 
-# Authors
+## 🔮 Future Improvements
+- Use Let's Encrypt for HTTPS
+- Add caching (Redis)
+- Improve UI/UX
+- Scale backend services
 
-**Ofek Ngaoker**  
-**Mevorach**
+---
 
-Full Stack Development – Final Project
+## 👨‍💻 Author
+Ofek Nagauker  
+Mevorach Barrabi
+
+---
+
+## 📄 License
+This project is for educational purposes.
