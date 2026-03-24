@@ -29,6 +29,10 @@ export async function analyzePost(
     const result = await analyzePostWithAI({ text, imageUrl });
     res.json(result);
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation failed" });
+    }
+
     next(err);
   }
 }
