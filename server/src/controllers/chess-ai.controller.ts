@@ -19,12 +19,17 @@ export async function analyzeChess(
 ) {
   try {
     const parsed = analyzeChessSchema.parse({ body: req.body });
+
     const result = await analyzeChessPosition({
       fen: parsed.body.fen,
     });
 
     res.json(result);
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation failed" });
+    }
+
     next(err);
   }
 }

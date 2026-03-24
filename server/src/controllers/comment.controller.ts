@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { createComment, getCommentsByPost } from "../services/comment.service";
 
@@ -7,13 +8,6 @@ import { createComment, getCommentsByPost } from "../services/comment.service";
  *
  * Creates a new comment under a specific post.
  * Requires authentication (user must be logged in).
- *
- * Flow:
- * 1. Validate user from auth middleware
- * 2. Extract postId from params
- * 3. Extract text from body
- * 4. Call service to create comment
- * 5. Return created comment
  */
 export async function createCommentHandler(
   req: AuthRequest,
@@ -21,21 +15,19 @@ export async function createCommentHandler(
   next: NextFunction
 ) {
   try {
-    // Ensure user is authenticated
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // TypeScript fix: force params.id to be string
     const postId = req.params.id as string;
 
-    // Extract comment text from request body
-    const { text } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
 
-    // Call service to create comment
+    const { text } = req.body;
     const comment = await createComment(postId, req.user.id, text);
 
-    // Return created comment
     res.status(201).json(comment);
   } catch (err) {
     next(err);
@@ -46,11 +38,6 @@ export async function createCommentHandler(
  * getCommentsHandler
  *
  * Returns all comments for a given post.
- *
- * Flow:
- * 1. Extract postId from params
- * 2. Fetch comments from DB
- * 3. Return list sorted by newest first
  */
 export async function getCommentsHandler(
   req: Request,
@@ -58,13 +45,13 @@ export async function getCommentsHandler(
   next: NextFunction
 ) {
   try {
-    // TypeScript fix: force params.id to be string
     const postId = req.params.id as string;
 
-    // Fetch comments from service
-    const comments = await getCommentsByPost(postId);
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
 
-    // Return comments
+    const comments = await getCommentsByPost(postId);
     res.json(comments);
   } catch (err) {
     next(err);
