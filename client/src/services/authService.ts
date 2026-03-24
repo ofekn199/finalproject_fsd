@@ -1,5 +1,11 @@
 import { api } from "../api/axios";
 
+/**
+ * Auth service — thin wrappers around the auth API endpoints.
+ * Components import these functions instead of calling axios directly,
+ * keeping HTTP logic out of UI components.
+ */
+
 export const register = async (data: {
   username: string;
   email: string;
