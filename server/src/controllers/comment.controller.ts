@@ -7,7 +7,7 @@ import { createComment, getCommentsByPost } from "../services/comment.service";
  * createCommentHandler
  *
  * Creates a new comment under a specific post.
- * Requires authentication (user must be logged in).
+ * Requires authentication.
  */
 export async function createCommentHandler(
   req: AuthRequest,
@@ -26,6 +26,7 @@ export async function createCommentHandler(
     }
 
     const { text } = req.body;
+
     const comment = await createComment(postId, req.user.id, text);
 
     res.status(201).json(comment);
@@ -37,7 +38,7 @@ export async function createCommentHandler(
 /**
  * getCommentsHandler
  *
- * Returns all comments for a given post.
+ * Returns all comments for a specific post, sorted by newest first.
  */
 export async function getCommentsHandler(
   req: Request,
@@ -52,6 +53,7 @@ export async function getCommentsHandler(
     }
 
     const comments = await getCommentsByPost(postId);
+
     res.json(comments);
   } catch (err) {
     next(err);
